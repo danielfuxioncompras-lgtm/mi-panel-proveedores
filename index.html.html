@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Proveedores</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+  <!-- PANTALLA DE LOGIN -->
+  <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+      <div class="text-center mb-6">
+        <i class="fas fa-boxes text-5xl text-blue-600 mb-4"></i>
+        <h1 class="text-2xl font-bold text-gray-800">Panel de Proveedores</h1>
+        <p class="text-gray-500 mt-2">Ingresa tus credenciales</p>
+      </div>
+      
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" id="loginEmail" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="tu@email.com">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+          <input type="password" id="loginPassword" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">
+          <i class="fas fa-sign-in-alt mr-2"></i> Iniciar Sesión
+        </button>
+      </form>
+      
+      <div id="loginError" class="hidden mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        Email o contraseña incorrectos
+      </div>
+    </div>
+  </div>
+
+  <!-- PANTALLA PRINCIPAL (oculta al inicio) -->
+  <div id="mainScreen" class="hidden">
+    <!-- Barra superior -->
+    <nav class="bg-blue-600 text-white p-4 shadow-lg">
+      <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold"><i class="fas fa-boxes mr-2"></i> Mi Stock</h1>
+        <div class="flex items-center space-x-4">
+          <span id="userName" class="text-sm"></span>
+          <button onclick="logout()" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded transition">
+            <i class="fas fa-sign-out-alt mr-1"></i> Salir
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="max-w-6xl mx-auto p-6">
+      <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="p-6 border-b">
+          <h2 class="text-xl font-bold text-gray-800">Mis Productos</h2>
+          <p class="text-gray-500 text-sm mt-1">Actualiza cantidades y fechas de entrega</p>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50 border-b">
+              <tr>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Código</th>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Descripción</th>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Cantidad</th>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Unidad</th>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Fecha Producción</th>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Fecha Entrega</th>
+                <th class="text-left p-4 text-sm font-semibold text-gray-600">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="stockTable">
+              <tr>
+                <td colspan="7" class="p-8 text-center text-gray-500">
+                  <i class="fas fa-spinner fa-spin text-2xl"></i>
+                  <p class="mt-2">Cargando productos...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de edición -->
+  <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
+      <div class="p-6 border-b">
+        <h3 class="text-xl font-bold text-gray-800">Editar Producto</h3>
+      </div>
+      <form id="editForm" class="p-6 space-y-4">
+        <input type="hidden" id="editRowNumber">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
+          <input type="text" id="editCodigo" readonly class="w-full border border-gray-300 rounded-lg p-2 bg-gray-50">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+          <input type="text" id="editDescripcion" readonly class="w-full border border-gray-300 rounded-lg p-2 bg-gray-50">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
+          <input type="number" id="editCantidad" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Producción</label>
+          <input type="date" id="editFechaProduccion" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Entrega</label>
+          <input type="date" id="editFechaEntrega" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div class="flex space-x-3 pt-4">
+          <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzy2rO1aXVx2LE-2QbMHLZesxFtvTHmF8-KsU5DM4kQOyyukZ5fIhoNPnCzfIMizRot6Q/exec';
+    let currentUser = null;
+
+    // LOGIN
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+          currentUser = result;
+          localStorage.setItem('currentUser', JSON.stringify(result));
+          showMainScreen();
+        } else {
+          document.getElementById('loginError').classList.remove('hidden');
+        }
+      } catch (error) {
+        alert('Error de conexión. Intenta de nuevo.');
+      }
+    });
+
+    // MOSTRAR PANTALLA PRINCIPAL
+    function showMainScreen() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainScreen').classList.remove('hidden');
+      document.getElementById('userName').innerText = `Hola, ${currentUser.nombre}`;
+      loadStock();
+    }
+
+    // CARGAR STOCK
+    async function loadStock() {
+      try {
+        const response = await fetch(`${SCRIPT_URL}?action=getStock&email=${encodeURIComponent(currentUser.email)}`);
+        const productos = await response.json();
+        
+        const tbody = document.getElementById('stockTable');
+        
+        if (productos.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500">No tienes productos registrados</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = productos.map(p => `
+          <tr class="border-b hover:bg-gray-50 transition">
+            <td class="p-4 font-mono text-sm">${p.codigo}</td>
+            <td class="p-4">${p.descripcion}</td>
+            <td class="p-4 font-bold text-blue-600">${p.cantidad}</td>
+            <td class="p-4">${p.unidad}</td>
+            <td class="p-4 text-sm text-gray-600">${formatDate(p.fecha_produccion)}</td>
+            <td class="p-4 text-sm text-gray-600">${formatDate(p.fecha_entrega)}</td>
+            <td class="p-4">
+              <button onclick='openEditModal(${JSON.stringify(p)})' class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition">
+                <i class="fas fa-edit mr-1"></i> Editar
+              </button>
+            </td>
+          </tr>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('stockTable').innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-500">Error al cargar productos</td></tr>';
+      }
+    }
+
+    // FORMATEAR FECHA
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      if (typeof dateStr === 'string' && dateStr.includes('T')) {
+        return dateStr.split('T')[0];
+      }
+      return dateStr;
+    }
+
+    // MODAL DE EDICIÓN
+    function openEditModal(producto) {
+      document.getElementById('editModal').classList.remove('hidden');
+      document.getElementById('editRowNumber').value = producto.rowNumber;
+      document.getElementById('editCodigo').value = producto.codigo;
+      document.getElementById('editDescripcion').value = producto.descripcion;
+      document.getElementById('editCantidad').value = producto.cantidad;
+      document.getElementById('editFechaProduccion').value = formatDate(producto.fecha_produccion);
+      document.getElementById('editFechaEntrega').value = formatDate(producto.fecha_entrega);
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    // GUARDAR EDICIÓN
+    document.getElementById('editForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const data = {
+        action: 'updateStock',
+        rowNumber: document.getElementById('editRowNumber').value,
+        cantidad: document.getElementById('editCantidad').value,
+        fecha_produccion: document.getElementById('editFechaProduccion').value,
+        fecha_entrega: document.getElementById('editFechaEntrega').value
+      };
+      
+      try {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify(data)
+        });
+        
+        alert('¡Producto actualizado con éxito!');
+        closeModal();
+        loadStock();
+      } catch (error) {
+        alert('Error al guardar. Intenta de nuevo.');
+      }
+    });
+
+    // LOGOUT
+    function logout() {
+      localStorage.removeItem('currentUser');
+      currentUser = null;
+      document.getElementById('mainScreen').classList.add('hidden');
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginForm').reset();
+    }
+
+    // VERIFICAR SESIÓN AL CARGAR
+    window.addEventListener('load', function() {
+      const saved = localStorage.getItem('currentUser');
+      if (saved) {
+        currentUser = JSON.parse(saved);
+        showMainScreen();
+      }
+    });
+  </script>
+</body>
+</html>
