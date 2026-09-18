@@ -5,82 +5,91 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel de Proveedores</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+      .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #ddd; }
+    }
+  </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-  <!-- PANTALLA DE LOGIN -->
+  <!-- LOGIN -->
   <div id="loginScreen" class="min-h-screen flex items-center justify-center">
     <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
       <div class="text-center mb-6">
         <i class="fas fa-boxes text-5xl text-blue-600 mb-4"></i>
-        <h1 class="text-2xl font-bold text-gray-800">Panel de Proveedores</h1>
-        <p class="text-gray-500 mt-2">Ingresa tus credenciales</p>
+        <h1 class="text-2xl font-bold text-gray-800">Portal de Proveedores</h1>
+        <p class="text-gray-500 mt-2">Gestión de Órdenes de Compra</p>
       </div>
-      
       <form id="loginForm" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-          <input type="email" id="loginEmail" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="tu@email.com">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-          <input type="password" id="loginPassword" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="••••••••">
-        </div>
-        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">
-          <i class="fas fa-sign-in-alt mr-2"></i> Iniciar Sesión
-        </button>
+        <input type="email" id="loginEmail" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Email">
+        <input type="password" id="loginPassword" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contraseña">
+        <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Iniciar Sesión</button>
       </form>
-      
-      <div id="loginError" class="hidden mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-        Email o contraseña incorrectos
-      </div>
+      <div id="loginError" class="hidden mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center">Credenciales incorrectas</div>
     </div>
   </div>
 
-  <!-- PANTALLA PRINCIPAL (oculta al inicio) -->
+  <!-- DASHBOARD PRINCIPAL -->
   <div id="mainScreen" class="hidden">
-    <!-- Barra superior -->
-    <nav class="bg-blue-600 text-white p-4 shadow-lg">
-      <div class="max-w-6xl mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold"><i class="fas fa-boxes mr-2"></i> Mi Stock</h1>
+    <nav class="bg-blue-600 text-white p-4 shadow-lg no-print">
+      <div class="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-4">
+        <h1 class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i> Dashboard de OCs</h1>
         <div class="flex items-center space-x-4">
-          <span id="userName" class="text-sm"></span>
-          <button onclick="logout()" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded transition">
+          <span id="userName" class="text-sm font-medium"></span>
+          <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded transition text-sm">
+            <i class="fas fa-file-pdf mr-1"></i> PDF
+          </button>
+          <button onclick="logout()" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded transition text-sm">
             <i class="fas fa-sign-out-alt mr-1"></i> Salir
           </button>
         </div>
       </div>
     </nav>
 
-    <!-- Contenido principal -->
-    <div class="max-w-6xl mx-auto p-6">
+    <div class="max-w-7xl mx-auto p-6">
+      <!-- Tarjetas de Resumen -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 no-print">
+        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
+          <h3 class="text-gray-500 text-sm font-semibold">Total de OCs Activas</h3>
+          <p class="text-3xl font-bold text-gray-800" id="totalOCs">0</p>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500">
+          <h3 class="text-gray-500 text-sm font-semibold">Unidades por Entregar</h3>
+          <p class="text-3xl font-bold text-gray-800" id="unidadesTotales">0</p>
+        </div>
+      </div>
+
+      <!-- Buscador -->
+      <div class="bg-white p-4 rounded-xl shadow-md mb-6 no-print flex items-center">
+        <i class="fas fa-search text-gray-400 text-xl ml-3"></i>
+        <input type="text" id="searchInput" placeholder="Buscar por Nº OC, Código o Descripción..." class="w-full p-2 ml-3 outline-none text-gray-700">
+      </div>
+
+      <!-- Tabla de OCs -->
       <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <div class="p-6 border-b">
-          <h2 class="text-xl font-bold text-gray-800">Mis Productos</h2>
-          <p class="text-gray-500 text-sm mt-1">Actualiza cantidades y fechas de entrega</p>
+          <h2 class="text-xl font-bold text-gray-800">Detalle de Órdenes de Compra</h2>
         </div>
-        
         <div class="overflow-x-auto">
-          <table class="w-full">
+          <table class="w-full text-sm">
             <thead class="bg-gray-50 border-b">
               <tr>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Código</th>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Descripción</th>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Cantidad</th>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Unidad</th>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Fecha Producción</th>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Fecha Entrega</th>
-                <th class="text-left p-4 text-sm font-semibold text-gray-600">Acciones</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Nº OC</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Código</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Descripción</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Cantidad</th>
+                <th class="text-left p-4 font-semibold text-gray-600">F. Inicio</th>
+                <th class="text-left p-4 font-semibold text-gray-600">F. Entrega</th>
+                <th class="text-left p-4 font-semibold text-gray-600 no-print">Acciones</th>
               </tr>
             </thead>
-            <tbody id="stockTable">
-              <tr>
-                <td colspan="7" class="p-8 text-center text-gray-500">
-                  <i class="fas fa-spinner fa-spin text-2xl"></i>
-                  <p class="mt-2">Cargando productos...</p>
-                </td>
-              </tr>
+            <tbody id="ocTable" class="divide-y divide-gray-100">
+              <tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando datos...</p></td></tr>
             </tbody>
           </table>
         </div>
@@ -88,60 +97,75 @@
     </div>
   </div>
 
-  <!-- Modal de edición -->
-  <div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4">
-      <div class="p-6 border-b">
-        <h3 class="text-xl font-bold text-gray-800">Editar Producto</h3>
+  <!-- MODAL DE DETALLE Y ENTREGAS -->
+  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-gray-800">Detalle de Entrega</h3>
+        <button onclick="closeModal()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
       </div>
-      <form id="editForm" class="p-6 space-y-4">
-        <input type="hidden" id="editRowNumber">
+      
+      <div class="p-6 space-y-6">
+        <div class="grid grid-cols-2 gap-4 text-sm bg-blue-50 p-4 rounded-lg">
+          <div><span class="font-semibold text-gray-600">Nº OC:</span> <span id="modalNumeroOC" class="font-bold text-blue-700"></span></div>
+          <div><span class="font-semibold text-gray-600">Producto:</span> <span id="modalProducto"></span></div>
+          <div><span class="font-semibold text-gray-600">Cantidad Total:</span> <span id="modalCantidad"></span></div>
+          <div><span class="font-semibold text-gray-600">F. Entrega:</span> <span id="modalFecha"></span></div>
+        </div>
+
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Código</label>
-          <input type="text" id="editCodigo" readonly class="w-full border border-gray-300 rounded-lg p-2 bg-gray-50">
+          <h4 class="font-bold text-gray-700 mb-2"><i class="fas fa-history mr-2"></i>Historial de Entregas</h4>
+          <div id="modalHistorial" class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm min-h-[60px]">
+            <p class="text-gray-500 italic">No hay entregas registradas aún.</p>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-          <input type="text" id="editDescripcion" readonly class="w-full border border-gray-300 rounded-lg p-2 bg-gray-50">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Cantidad</label>
-          <input type="number" id="editCantidad" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Producción</label>
-          <input type="date" id="editFechaProduccion" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de Entrega</label>
-          <input type="date" id="editFechaEntrega" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none">
-        </div>
-        <div class="flex space-x-3 pt-4">
-          <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition">
-            Cancelar
-          </button>
-          <button type="submit" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg hover:bg-blue-700 transition">
-            Guardar
-          </button>
-        </div>
-      </form>
+
+        <form id="entregaForm" class="border-t pt-4">
+          <input type="hidden" id="modalRowNumber">
+          <input type="hidden" id="modalUnidad">
+          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-plus-circle mr-2 text-green-600"></i>Registrar Nueva Entrega</h4>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
+              <input type="date" id="nuevaFecha" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad</label>
+              <input type="number" id="nuevaCantidad" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none" placeholder="Ej: 20">
+            </div>
+          </div>
+          <div class="mt-4 flex space-x-3">
+            <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
+            <button type="submit" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition">Guardar</button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyZWE53rALrPKmueK2xSIEjRE_1pFLc1UxAa00rQLZxDRmG9cHUI52kRG2hMWPHAHnL_Q/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXpwejX78TXJ-iryEdUA3ZWwALbxaNf7s0SdRvuXO-urDBLmjF-DlZEsc6JVEvS8G-Ag/exec';
     let currentUser = null;
+    let ocsData = [];
 
-    // LOGIN
+    async function llamarScript(url) {
+      const response = await fetch(url, { redirect: 'follow' });
+      return await response.json();
+    }
+
     document.getElementById('loginForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+      const btn = document.getElementById('btnLogin');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Conectando...';
+      btn.disabled = true;
+      document.getElementById('loginError').classList.add('hidden');
+
       const email = document.getElementById('loginEmail').value;
       const password = document.getElementById('loginPassword').value;
-      
+      const url = `${SCRIPT_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
       try {
-        const response = await fetch(`${SCRIPT_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-        const result = await response.json();
-        
+        const result = await llamarScript(url);
         if (result.success) {
           currentUser = result;
           localStorage.setItem('currentUser', JSON.stringify(result));
@@ -150,112 +174,134 @@
           document.getElementById('loginError').classList.remove('hidden');
         }
       } catch (error) {
-        alert('Error de conexión. Intenta de nuevo.');
+        alert('Error de conexión.');
+      } finally {
+        btn.innerHTML = 'Iniciar Sesión';
+        btn.disabled = false;
       }
     });
 
-    // MOSTRAR PANTALLA PRINCIPAL
     function showMainScreen() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainScreen').classList.remove('hidden');
       document.getElementById('userName').innerText = `Hola, ${currentUser.nombre}`;
-      loadStock();
+      loadOCs();
     }
 
-    // CARGAR STOCK
-    async function loadStock() {
+    async function loadOCs() {
+      const url = `${SCRIPT_URL}?action=getOCs&email=${encodeURIComponent(currentUser.email)}`;
       try {
-        const response = await fetch(`${SCRIPT_URL}?action=getStock&email=${encodeURIComponent(currentUser.email)}`);
-        const productos = await response.json();
-        
-        const tbody = document.getElementById('stockTable');
-        
-        if (productos.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500">No tienes productos registrados</td></tr>';
-          return;
-        }
-        
-        tbody.innerHTML = productos.map(p => `
-          <tr class="border-b hover:bg-gray-50 transition">
-            <td class="p-4 font-mono text-sm">${p.codigo}</td>
-            <td class="p-4">${p.descripcion}</td>
-            <td class="p-4 font-bold text-blue-600">${p.cantidad}</td>
-            <td class="p-4">${p.unidad}</td>
-            <td class="p-4 text-sm text-gray-600">${formatDate(p.fecha_produccion)}</td>
-            <td class="p-4 text-sm text-gray-600">${formatDate(p.fecha_entrega)}</td>
-            <td class="p-4">
-              <button onclick='openEditModal(${JSON.stringify(p)})' class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition">
-                <i class="fas fa-edit mr-1"></i> Editar
-              </button>
-            </td>
-          </tr>
-        `).join('');
+        ocsData = await llamarScript(url);
+        renderTable(ocsData);
+        updateDashboard(ocsData);
       } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('stockTable').innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-500">Error al cargar productos</td></tr>';
+        document.getElementById('ocTable').innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-500">Error al cargar</td></tr>';
       }
     }
 
-    // FORMATEAR FECHA
-    function formatDate(dateStr) {
-      if (!dateStr) return '-';
-      if (typeof dateStr === 'string' && dateStr.includes('T')) {
-        return dateStr.split('T')[0];
+    function renderTable(data) {
+      const tbody = document.getElementById('ocTable');
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500">No hay OCs encontradas</td></tr>';
+        return;
       }
-      return dateStr;
+      tbody.innerHTML = data.map(oc => `
+        <tr class="hover:bg-gray-50 transition">
+          <td class="p-4 font-bold text-blue-600">${oc.numero_oc}</td>
+          <td class="p-4 font-mono text-xs">${oc.codigo}</td>
+          <td class="p-4">${oc.descripcion}</td>
+          <td class="p-4 font-semibold">${oc.cantidad_total} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
+          <td class="p-4 text-sm text-gray-600">${formatDate(oc.fecha_inicio)}</td>
+          <td class="p-4 text-sm text-gray-600">${formatDate(oc.fecha_entrega)}</td>
+          <td class="p-4 no-print">
+            <button onclick='openDetailModal(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded text-xs font-semibold transition">
+              <i class="fas fa-eye mr-1"></i> Detalle
+            </button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    // MODAL DE EDICIÓN
-    function openEditModal(producto) {
-      document.getElementById('editModal').classList.remove('hidden');
-      document.getElementById('editRowNumber').value = producto.rowNumber;
-      document.getElementById('editCodigo').value = producto.codigo;
-      document.getElementById('editDescripcion').value = producto.descripcion;
-      document.getElementById('editCantidad').value = producto.cantidad;
-      document.getElementById('editFechaProduccion').value = formatDate(producto.fecha_produccion);
-      document.getElementById('editFechaEntrega').value = formatDate(producto.fecha_entrega);
+    // BUSCADOR RÁPIDO
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const term = e.target.value.toLowerCase();
+      const filtered = ocsData.filter(oc => 
+        (oc.numero_oc && oc.numero_oc.toLowerCase().includes(term)) ||
+        (oc.codigo && oc.codigo.toLowerCase().includes(term)) ||
+        (oc.descripcion && oc.descripcion.toLowerCase().includes(term))
+      );
+      renderTable(filtered);
+    });
+
+    function updateDashboard(data) {
+      document.getElementById('totalOCs').innerText = data.length;
+      const unidades = data.reduce((sum, oc) => sum + Number(oc.cantidad_total || 0), 0);
+      document.getElementById('unidadesTotales').innerText = unidades.toLocaleString();
+    }
+
+    function formatDate(d) {
+      if (!d) return '-';
+      if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
+      return d;
+    }
+
+    function openDetailModal(oc) {
+      document.getElementById('detailModal').classList.remove('hidden');
+      document.getElementById('modalRowNumber').value = oc.rowNumber;
+      document.getElementById('modalNumeroOC').innerText = oc.numero_oc;
+      document.getElementById('modalProducto').innerText = `${oc.codigo} - ${oc.descripcion}`;
+      document.getElementById('modalCantidad').innerText = `${oc.cantidad_total} ${oc.unidad}`;
+      document.getElementById('modalFecha').innerText = formatDate(oc.fecha_entrega);
+      document.getElementById('modalUnidad').value = oc.unidad;
+      document.getElementById('nuevaFecha').value = new Date().toISOString().split('T')[0];
+      
+      const historialDiv = document.getElementById('modalHistorial');
+      if (oc.detalle_entregas) {
+        const entregas = oc.detalle_entregas.split('|').map(e => e.trim());
+        historialDiv.innerHTML = entregas.map(e => `<div class="flex items-center mb-1"><i class="fas fa-check-circle text-green-500 mr-2"></i> ${e}</div>`).join('');
+      } else {
+        historialDiv.innerHTML = '<p class="text-gray-500 italic">Sin entregas registradas.</p>';
+      }
     }
 
     function closeModal() {
-      document.getElementById('editModal').classList.add('hidden');
+      document.getElementById('detailModal').classList.add('hidden');
     }
 
-    // GUARDAR EDICIÓN
-    document.getElementById('editForm').addEventListener('submit', async function(e) {
+    document.getElementById('entregaForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      
+      const btn = e.target.querySelector('button[type="submit"]');
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+      btn.disabled = true;
+
       const data = {
-        action: 'updateStock',
-        rowNumber: document.getElementById('editRowNumber').value,
-        cantidad: document.getElementById('editCantidad').value,
-        fecha_produccion: document.getElementById('editFechaProduccion').value,
-        fecha_entrega: document.getElementById('editFechaEntrega').value
+        action: 'updateEntrega',
+        rowNumber: document.getElementById('modalRowNumber').value,
+        fecha: document.getElementById('nuevaFecha').value,
+        cantidad: document.getElementById('nuevaCantidad').value,
+        unidad: document.getElementById('modalUnidad').value
       };
-      
+
       try {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify(data)
-        });
-        
-        alert('¡Producto actualizado con éxito!');
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), redirect: 'follow' });
+        alert('¡Entrega registrada!');
         closeModal();
-        loadStock();
+        loadOCs();
       } catch (error) {
-        alert('Error al guardar. Intenta de nuevo.');
+        alert('Error al guardar.');
+      } finally {
+        btn.innerHTML = 'Guardar';
+        btn.disabled = false;
       }
     });
 
-    // LOGOUT
     function logout() {
       localStorage.removeItem('currentUser');
       currentUser = null;
       document.getElementById('mainScreen').classList.add('hidden');
       document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('loginForm').reset();
     }
 
-    // VERIFICAR SESIÓN AL CARGAR
     window.addEventListener('load', function() {
       const saved = localStorage.getItem('currentUser');
       if (saved) {
