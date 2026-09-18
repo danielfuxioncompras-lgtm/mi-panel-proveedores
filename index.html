@@ -6,6 +6,7 @@
   <title>Panel de Proveedores</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <style>
     @media print {
@@ -13,6 +14,11 @@
       body { background: white; }
       .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #ddd; }
     }
+    .badge-Inicio { background: #DBEAFE; color: #1E40AF; }
+    .badge-En-Producción { background: #FEF3C7; color: #92400E; }
+    .badge-Por-Entregar { background: #FCE7F3; color: #9D174D; }
+    .badge-Terminado { background: #D1FAE5; color: #065F46; }
+    .badge-Retrasado { background: #FEE2E2; color: #991B1B; }
   </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -34,17 +40,26 @@
     </div>
   </div>
 
-  <!-- DASHBOARD PRINCIPAL -->
+  <!-- DASHBOARD -->
   <div id="mainScreen" class="hidden">
     <nav class="bg-blue-600 text-white p-4 shadow-lg no-print">
       <div class="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-4">
-        <h1 class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i> Dashboard de OCs</h1>
-        <div class="flex items-center space-x-4">
-          <span id="userName" class="text-sm font-medium"></span>
-          <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded transition text-sm">
+        <div>
+          <h1 class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i> Dashboard de OCs</h1>
+          <p class="text-xs text-blue-100 mt-1" id="userRole"></p>
+        </div>
+        <div class="flex items-center space-x-3">
+          <span id="userName" class="text-sm font-medium bg-blue-700 px-3 py-1.5 rounded-lg"></span>
+          <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded transition text-sm">
+            <i class="fas fa-file-excel mr-1"></i> Excel
+          </button>
+          <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded transition text-sm">
             <i class="fas fa-file-pdf mr-1"></i> PDF
           </button>
-          <button onclick="logout()" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded transition text-sm">
+          <button id="btnAdmin" onclick="openAdminModal()" class="hidden bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded transition text-sm">
+            <i class="fas fa-plus mr-1"></i> Nueva OC
+          </button>
+          <button onclick="logout()" class="bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded transition text-sm">
             <i class="fas fa-sign-out-alt mr-1"></i> Salir
           </button>
         </div>
@@ -53,16 +68,27 @@
 
     <div class="max-w-7xl mx-auto p-6">
       <!-- Tarjetas de Resumen -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 no-print">
-        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-blue-500">
-          <h3 class="text-gray-500 text-sm font-semibold">Total de OCs Activas</h3>
-          <p class="text-3xl font-bold text-gray-800" id="totalOCs">0</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
+        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
+          <h3 class="text-gray-500 text-xs font-semibold">Total OCs</h3>
+          <p class="text-2xl font-bold text-gray-800" id="totalOCs">0</p>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-md border-l-4 border-yellow-500">
-          <h3 class="text-gray-500 text-sm font-semibold">Unidades por Entregar</h3>
-          <p class="text-3xl font-bold text-gray-800" id="unidadesTotales">0</p>
+        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-orange-500">
+          <h3 class="text-gray-500 text-xs font-semibold">Total en Kilos</h3>
+          <p class="text-2xl font-bold text-gray-800" id="totalKg">0</p>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-purple-500">
+          <h3 class="text-gray-500 text-xs font-semibold">Total en Millares</h3>
+          <p class="text-2xl font-bold text-gray-800" id="totalMill">0</p>
+        </div>
+        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-red-500">
+          <h3 class="text-gray-500 text-xs font-semibold">OCs Retrasadas</h3>
+          <p class="text-2xl font-bold text-red-600" id="totalRetrasadas">0</p>
         </div>
       </div>
+
+      <!-- Alertas de retraso -->
+      <div id="alertasRetraso" class="mb-6 no-print"></div>
 
       <!-- Buscador -->
       <div class="bg-white p-4 rounded-xl shadow-md mb-6 no-print flex items-center">
@@ -70,10 +96,20 @@
         <input type="text" id="searchInput" placeholder="Buscar por Nº OC, Código o Descripción..." class="w-full p-2 ml-3 outline-none text-gray-700">
       </div>
 
-      <!-- Tabla de OCs -->
+      <!-- Filtro de estado -->
+      <div class="bg-white p-4 rounded-xl shadow-md mb-6 no-print flex flex-wrap gap-2 items-center">
+        <span class="text-sm font-semibold text-gray-600 mr-2">Filtrar por estado:</span>
+        <button onclick="filtrarEstado('Todos')" class="px-3 py-1 rounded-full text-xs bg-blue-600 text-white">Todos</button>
+        <button onclick="filtrarEstado('Inicio')" class="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700">Inicio</button>
+        <button onclick="filtrarEstado('En Producción')" class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">En Producción</button>
+        <button onclick="filtrarEstado('Por Entregar')" class="px-3 py-1 rounded-full text-xs bg-pink-100 text-pink-700">Por Entregar</button>
+        <button onclick="filtrarEstado('Terminado')" class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">Terminado</button>
+      </div>
+
+      <!-- Tabla -->
       <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <div class="p-6 border-b">
-          <h2 class="text-xl font-bold text-gray-800">Detalle de Órdenes de Compra</h2>
+          <h2 class="text-xl font-bold text-gray-800">Órdenes de Compra</h2>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-sm">
@@ -83,13 +119,14 @@
                 <th class="text-left p-4 font-semibold text-gray-600">Código</th>
                 <th class="text-left p-4 font-semibold text-gray-600">Descripción</th>
                 <th class="text-left p-4 font-semibold text-gray-600">Cantidad</th>
-                <th class="text-left p-4 font-semibold text-gray-600">F. Inicio</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Stock Almacén</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Estado</th>
                 <th class="text-left p-4 font-semibold text-gray-600">F. Entrega</th>
                 <th class="text-left p-4 font-semibold text-gray-600 no-print">Acciones</th>
               </tr>
             </thead>
             <tbody id="ocTable" class="divide-y divide-gray-100">
-              <tr><td colspan="7" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando datos...</p></td></tr>
+              <tr><td colspan="8" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando...</p></td></tr>
             </tbody>
           </table>
         </div>
@@ -97,46 +134,108 @@
     </div>
   </div>
 
-  <!-- MODAL DE DETALLE Y ENTREGAS -->
-  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print">
-    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+  <!-- MODAL DETALLE -->
+  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-gray-800">Detalle de Entrega</h3>
+        <h3 class="text-xl font-bold text-gray-800">Detalle de OC</h3>
         <button onclick="closeModal()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
       </div>
-      
       <div class="p-6 space-y-6">
         <div class="grid grid-cols-2 gap-4 text-sm bg-blue-50 p-4 rounded-lg">
           <div><span class="font-semibold text-gray-600">Nº OC:</span> <span id="modalNumeroOC" class="font-bold text-blue-700"></span></div>
           <div><span class="font-semibold text-gray-600">Producto:</span> <span id="modalProducto"></span></div>
           <div><span class="font-semibold text-gray-600">Cantidad Total:</span> <span id="modalCantidad"></span></div>
+          <div><span class="font-semibold text-gray-600">Stock Almacén:</span> <span id="modalStock" class="font-bold text-green-600"></span></div>
           <div><span class="font-semibold text-gray-600">F. Entrega:</span> <span id="modalFecha"></span></div>
+          <div><span class="font-semibold text-gray-600">Estado:</span> <span id="modalEstado"></span></div>
         </div>
-
+        
         <div>
           <h4 class="font-bold text-gray-700 mb-2"><i class="fas fa-history mr-2"></i>Historial de Entregas</h4>
-          <div id="modalHistorial" class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm min-h-[60px]">
-            <p class="text-gray-500 italic">No hay entregas registradas aún.</p>
-          </div>
+          <div id="modalHistorial" class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm min-h-[60px]"></div>
         </div>
 
         <form id="entregaForm" class="border-t pt-4">
           <input type="hidden" id="modalRowNumber">
           <input type="hidden" id="modalUnidad">
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-plus-circle mr-2 text-green-600"></i>Registrar Nueva Entrega</h4>
+          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-plus-circle mr-2 text-green-600"></i>Registrar Entrega</h4>
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
-              <input type="date" id="nuevaFecha" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none">
+              <input type="date" id="nuevaFecha" required class="w-full border border-gray-300 rounded-lg p-2">
             </div>
             <div>
               <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad</label>
-              <input type="number" id="nuevaCantidad" required class="w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-green-500 outline-none" placeholder="Ej: 20">
+              <input type="number" id="nuevaCantidad" required class="w-full border border-gray-300 rounded-lg p-2">
             </div>
           </div>
           <div class="mt-4 flex space-x-3">
-            <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg hover:bg-gray-300 transition">Cancelar</button>
-            <button type="submit" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg hover:bg-green-700 transition">Guardar</button>
+            <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg">Cancelar</button>
+            <button type="submit" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">Guardar Entrega</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ADMIN (CRUD) -->
+  <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
+    <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-6 border-b bg-purple-50 flex justify-between items-center">
+        <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-cog mr-2"></i>Panel de Administración</h3>
+        <button onclick="closeAdminModal()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <form id="adminForm" class="grid grid-cols-2 gap-4">
+          <input type="hidden" id="adminRowNumber">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Nº OC</label>
+            <input type="text" id="adminNumeroOC" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Código</label>
+            <input type="text" id="adminCodigo" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
+            <input type="text" id="adminDescripcion" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad Total</label>
+            <input type="number" id="adminCantidad" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Unidad</label>
+            <select id="adminUnidad" class="w-full border border-gray-300 rounded-lg p-2">
+              <option value="Kg">Kg</option>
+              <option value="Mill">Mill</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Fecha Inicio</label>
+            <input type="date" id="adminFechaInicio" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Fecha Entrega</label>
+            <input type="date" id="adminFechaEntrega" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Estado</label>
+            <select id="adminEstado" class="w-full border border-gray-300 rounded-lg p-2">
+              <option value="Inicio">Inicio</option>
+              <option value="En Producción">En Producción</option>
+              <option value="Por Entregar">Por Entregar</option>
+              <option value="Terminado">Terminado</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Proveedor (email)</label>
+            <input type="email" id="adminProveedor" required class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div class="col-span-2 flex space-x-3 pt-2">
+            <button type="button" onclick="closeAdminModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg">Cancelar</button>
+            <button type="submit" id="adminSubmitBtn" class="flex-1 bg-purple-600 text-white font-bold py-2 rounded-lg">Guardar OC</button>
           </div>
         </form>
       </div>
@@ -144,9 +243,10 @@
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXpwejX78TXJ-iryEdUA3ZWwALbxaNf7s0SdRvuXO-urDBLmjF-DlZEsc6JVEvS8G-Ag/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzxuVLqZJxTkVWWvJ28ym8EmEYtCIUzVPGG9tOpGxn_bCDOX0l3GDIkkNA9aRwHXr8NcQ/exec';
     let currentUser = null;
     let ocsData = [];
+    let filtroActual = 'Todos';
 
     async function llamarScript(url) {
       const response = await fetch(url, { redirect: 'follow' });
@@ -184,60 +284,123 @@
     function showMainScreen() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainScreen').classList.remove('hidden');
-      document.getElementById('userName').innerText = `Hola, ${currentUser.nombre}`;
+      document.getElementById('userName').innerText = `👤 ${currentUser.nombre}`;
+      document.getElementById('userRole').innerText = currentUser.rol === 'Admin' ? ' Modo Administrador' : '📦 Portal de Proveedor';
+      
+      if (currentUser.rol === 'Admin') {
+        document.getElementById('btnAdmin').classList.remove('hidden');
+      }
+      
       loadOCs();
     }
 
     async function loadOCs() {
-      const url = `${SCRIPT_URL}?action=getOCs&email=${encodeURIComponent(currentUser.email)}`;
+      const url = `${SCRIPT_URL}?action=getOCs&email=${encodeURIComponent(currentUser.email)}&rol=${encodeURIComponent(currentUser.rol)}`;
       try {
         ocsData = await llamarScript(url);
-        renderTable(ocsData);
-        updateDashboard(ocsData);
+        aplicarFiltros();
       } catch (error) {
-        document.getElementById('ocTable').innerHTML = '<tr><td colspan="7" class="p-8 text-center text-red-500">Error al cargar</td></tr>';
+        document.getElementById('ocTable').innerHTML = '<tr><td colspan="8" class="p-8 text-center text-red-500">Error al cargar</td></tr>';
       }
+    }
+
+    function aplicarFiltros() {
+      const term = document.getElementById('searchInput').value.toLowerCase();
+      let data = ocsData.filter(oc => {
+        const matchSearch = (oc.numero_oc && oc.numero_oc.toLowerCase().includes(term)) ||
+                           (oc.codigo && oc.codigo.toLowerCase().includes(term)) ||
+                           (oc.descripcion && oc.descripcion.toLowerCase().includes(term));
+        const matchEstado = filtroActual === 'Todos' || oc.estado === filtroActual;
+        return matchSearch && matchEstado;
+      });
+      renderTable(data);
+      updateDashboard(ocsData);
+      generarAlertas(ocsData);
     }
 
     function renderTable(data) {
       const tbody = document.getElementById('ocTable');
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-gray-500">No hay OCs encontradas</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-gray-500">No hay OCs</td></tr>';
         return;
       }
-      tbody.innerHTML = data.map(oc => `
-        <tr class="hover:bg-gray-50 transition">
-          <td class="p-4 font-bold text-blue-600">${oc.numero_oc}</td>
-          <td class="p-4 font-mono text-xs">${oc.codigo}</td>
-          <td class="p-4">${oc.descripcion}</td>
-          <td class="p-4 font-semibold">${oc.cantidad_total} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
-          <td class="p-4 text-sm text-gray-600">${formatDate(oc.fecha_inicio)}</td>
-          <td class="p-4 text-sm text-gray-600">${formatDate(oc.fecha_entrega)}</td>
-          <td class="p-4 no-print">
-            <button onclick='openDetailModal(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded text-xs font-semibold transition">
-              <i class="fas fa-eye mr-1"></i> Detalle
-            </button>
-          </td>
-        </tr>
-      `).join('');
+      
+      const hoy = new Date().toISOString().split('T')[0];
+      
+      tbody.innerHTML = data.map(oc => {
+        let estadoClass = `badge-${oc.estado.replace(' ', '-')}`;
+        let esRetrasada = oc.fecha_entrega && oc.fecha_entrega < hoy && oc.estado !== 'Terminado';
+        if (esRetrasada) estadoClass = 'badge-Retrasado';
+        
+        const acciones = currentUser.rol === 'Admin' ? `
+          <button onclick='editarOC(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-2 py-1 rounded text-xs mr-1"><i class="fas fa-edit"></i></button>
+          <button onclick='eliminarOC(${oc.rowNumber})' class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs mr-1"><i class="fas fa-trash"></i></button>
+          <select onchange='cambiarEstado(${oc.rowNumber}, this.value)' class="text-xs border rounded p-1">
+            <option value="">Cambiar estado</option>
+            <option value="Inicio">Inicio</option>
+            <option value="En Producción">En Producción</option>
+            <option value="Por Entregar">Por Entregar</option>
+            <option value="Terminado">Terminado</option>
+          </select>
+        ` : `<button onclick='openDetailModal(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded text-xs"><i class="fas fa-eye mr-1"></i> Detalle</button>`;
+        
+        return `
+          <tr class="hover:bg-gray-50 transition ${esRetrasada ? 'bg-red-50' : ''}">
+            <td class="p-4 font-bold text-blue-600">${oc.numero_oc}</td>
+            <td class="p-4 font-mono text-xs">${oc.codigo}</td>
+            <td class="p-4">${oc.descripcion}</td>
+            <td class="p-4 font-semibold">${oc.cantidad_total} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
+            <td class="p-4 font-semibold text-green-600">${oc.stock_almacen || 0} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
+            <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${estadoClass}">${oc.estado}</span></td>
+            <td class="p-4 text-sm ${esRetrasada ? 'text-red-600 font-bold' : 'text-gray-600'}">${formatDate(oc.fecha_entrega)} ${esRetrasada ? '<i class="fas fa-exclamation-triangle"></i>' : ''}</td>
+            <td class="p-4 no-print">${acciones}</td>
+          </tr>
+        `;
+      }).join('');
     }
-
-    // BUSCADOR RÁPIDO
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-      const term = e.target.value.toLowerCase();
-      const filtered = ocsData.filter(oc => 
-        (oc.numero_oc && oc.numero_oc.toLowerCase().includes(term)) ||
-        (oc.codigo && oc.codigo.toLowerCase().includes(term)) ||
-        (oc.descripcion && oc.descripcion.toLowerCase().includes(term))
-      );
-      renderTable(filtered);
-    });
 
     function updateDashboard(data) {
       document.getElementById('totalOCs').innerText = data.length;
-      const unidades = data.reduce((sum, oc) => sum + Number(oc.cantidad_total || 0), 0);
-      document.getElementById('unidadesTotales').innerText = unidades.toLocaleString();
+      const totalKg = data.filter(oc => oc.unidad === 'Kg').reduce((sum, oc) => sum + Number(oc.cantidad_total || 0), 0);
+      const totalMill = data.filter(oc => oc.unidad === 'Mill').reduce((sum, oc) => sum + Number(oc.cantidad_total || 0), 0);
+      document.getElementById('totalKg').innerText = totalKg.toLocaleString();
+      document.getElementById('totalMill').innerText = totalMill.toLocaleString();
+      
+      const hoy = new Date().toISOString().split('T')[0];
+      const retrasadas = data.filter(oc => oc.fecha_entrega && oc.fecha_entrega < hoy && oc.estado !== 'Terminado').length;
+      document.getElementById('totalRetrasadas').innerText = retrasadas;
     }
+
+    function generarAlertas(data) {
+      const hoy = new Date().toISOString().split('T')[0];
+      const retrasadas = data.filter(oc => oc.fecha_entrega && oc.fecha_entrega < hoy && oc.estado !== 'Terminado');
+      const container = document.getElementById('alertasRetraso');
+      
+      if (retrasadas.length > 0) {
+        container.innerHTML = `
+          <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div class="flex items-start">
+              <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3 mt-1"></i>
+              <div class="flex-1">
+                <h4 class="font-bold text-red-800">⚠️ ${retrasadas.length} OC(s) con retraso</h4>
+                <ul class="text-sm text-red-700 mt-1">
+                  ${retrasadas.map(oc => `<li>• <strong>${oc.numero_oc}</strong> - ${oc.descripcion} (Vencía: ${formatDate(oc.fecha_entrega)})</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        container.innerHTML = '';
+      }
+    }
+
+    function filtrarEstado(estado) {
+      filtroActual = estado;
+      aplicarFiltros();
+    }
+
+    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
 
     function formatDate(d) {
       if (!d) return '-';
@@ -251,7 +414,9 @@
       document.getElementById('modalNumeroOC').innerText = oc.numero_oc;
       document.getElementById('modalProducto').innerText = `${oc.codigo} - ${oc.descripcion}`;
       document.getElementById('modalCantidad').innerText = `${oc.cantidad_total} ${oc.unidad}`;
+      document.getElementById('modalStock').innerText = `${oc.stock_almacen || 0} ${oc.unidad}`;
       document.getElementById('modalFecha').innerText = formatDate(oc.fecha_entrega);
+      document.getElementById('modalEstado').innerText = oc.estado;
       document.getElementById('modalUnidad').value = oc.unidad;
       document.getElementById('nuevaFecha').value = new Date().toISOString().split('T')[0];
       
@@ -284,22 +449,124 @@
 
       try {
         await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), redirect: 'follow' });
-        alert('¡Entrega registrada!');
+        alert('¡Entrega registrada! Stock actualizado.');
         closeModal();
         loadOCs();
       } catch (error) {
         alert('Error al guardar.');
       } finally {
-        btn.innerHTML = 'Guardar';
+        btn.innerHTML = 'Guardar Entrega';
         btn.disabled = false;
       }
     });
+
+    // FUNCIONES ADMIN
+    function openAdminModal() {
+      document.getElementById('adminModal').classList.remove('hidden');
+      document.getElementById('adminForm').reset();
+      document.getElementById('adminRowNumber').value = '';
+      document.getElementById('adminSubmitBtn').innerText = 'Crear Nueva OC';
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function editarOC(oc) {
+      document.getElementById('adminModal').classList.remove('hidden');
+      document.getElementById('adminRowNumber').value = oc.rowNumber;
+      document.getElementById('adminNumeroOC').value = oc.numero_oc;
+      document.getElementById('adminCodigo').value = oc.codigo;
+      document.getElementById('adminDescripcion').value = oc.descripcion;
+      document.getElementById('adminCantidad').value = oc.cantidad_total;
+      document.getElementById('adminUnidad').value = oc.unidad;
+      document.getElementById('adminFechaInicio').value = formatDate(oc.fecha_inicio);
+      document.getElementById('adminFechaEntrega').value = formatDate(oc.fecha_entrega);
+      document.getElementById('adminEstado').value = oc.estado;
+      document.getElementById('adminProveedor').value = oc.email_proveedor;
+      document.getElementById('adminSubmitBtn').innerText = 'Actualizar OC';
+    }
+
+    document.getElementById('adminForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const rowNumber = document.getElementById('adminRowNumber').value;
+      const data = {
+        numero_oc: document.getElementById('adminNumeroOC').value,
+        codigo: document.getElementById('adminCodigo').value,
+        descripcion: document.getElementById('adminDescripcion').value,
+        cantidad_total: document.getElementById('adminCantidad').value,
+        unidad: document.getElementById('adminUnidad').value,
+        fecha_inicio: document.getElementById('adminFechaInicio').value,
+        fecha_entrega: document.getElementById('adminFechaEntrega').value,
+        estado: document.getElementById('adminEstado').value,
+        email_proveedor: document.getElementById('adminProveedor').value
+      };
+
+      try {
+        if (rowNumber) {
+          data.action = 'editOC';
+          data.rowNumber = rowNumber;
+        } else {
+          data.action = 'addOC';
+        }
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), redirect: 'follow' });
+        alert(rowNumber ? 'OC actualizada' : 'OC creada');
+        closeAdminModal();
+        loadOCs();
+      } catch (error) {
+        alert('Error al guardar.');
+      }
+    });
+
+    async function eliminarOC(rowNumber) {
+      if (!confirm('¿Seguro que deseas eliminar esta OC?')) return;
+      try {
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOC', rowNumber: rowNumber }), redirect: 'follow' });
+        alert('OC eliminada');
+        loadOCs();
+      } catch (error) {
+        alert('Error al eliminar.');
+      }
+    }
+
+    async function cambiarEstado(rowNumber, estado) {
+      if (!estado) return;
+      try {
+        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'updateEstado', rowNumber: rowNumber, estado: estado }), redirect: 'follow' });
+        alert('Estado actualizado');
+        loadOCs();
+      } catch (error) {
+        alert('Error al cambiar estado.');
+      }
+    }
+
+    // EXPORTAR A EXCEL
+    function exportExcel() {
+      const data = ocsData.map(oc => ({
+        'Nº OC': oc.numero_oc,
+        'Código': oc.codigo,
+        'Descripción': oc.descripcion,
+        'Cantidad Total': oc.cantidad_total,
+        'Unidad': oc.unidad,
+        'Stock Almacén': oc.stock_almacen || 0,
+        'Estado': oc.estado,
+        'F. Inicio': formatDate(oc.fecha_inicio),
+        'F. Entrega': formatDate(oc.fecha_entrega),
+        'Detalle Entregas': oc.detalle_entregas || ''
+      }));
+      
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'OCs');
+      XLSX.writeFile(wb, `OCs_${currentUser.nombre}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    }
 
     function logout() {
       localStorage.removeItem('currentUser');
       currentUser = null;
       document.getElementById('mainScreen').classList.add('hidden');
       document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('loginForm').reset();
     }
 
     window.addEventListener('load', function() {
