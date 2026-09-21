@@ -119,6 +119,7 @@
                 <th class="text-left p-4 font-semibold text-gray-600">Código</th>
                 <th class="text-left p-4 font-semibold text-gray-600">Descripción</th>
                 <th class="text-left p-4 font-semibold text-gray-600">Cantidad</th>
+                <th class="text-left p-4 font-semibold text-gray-600">Precio Unit.</th>
                 <th class="text-left p-4 font-semibold text-gray-600">Stock Almacén</th>
                 <th class="text-left p-4 font-semibold text-gray-600">Estado</th>
                 <th class="text-left p-4 font-semibold text-gray-600">F. Entrega</th>
@@ -126,7 +127,7 @@
               </tr>
             </thead>
             <tbody id="ocTable" class="divide-y divide-gray-100">
-              <tr><td colspan="8" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando...</p></td></tr>
+              <tr><td colspan="9" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando...</p></td></tr>
             </tbody>
           </table>
         </div>
@@ -147,6 +148,7 @@
           <div><span class="font-semibold text-gray-600">Producto:</span> <span id="modalProducto"></span></div>
           <div><span class="font-semibold text-gray-600">Cantidad Total:</span> <span id="modalCantidad"></span></div>
           <div><span class="font-semibold text-gray-600">Stock Almacén:</span> <span id="modalStock" class="font-bold text-green-600"></span></div>
+          <div><span class="font-semibold text-gray-600">Precio Unitario:</span> <span id="modalPrecio" class="font-bold text-green-600"></span></div>
           <div><span class="font-semibold text-gray-600">F. Entrega:</span> <span id="modalFecha"></span></div>
           <div><span class="font-semibold text-gray-600">Estado:</span> <span id="modalEstado"></span></div>
         </div>
@@ -213,6 +215,10 @@
             </select>
           </div>
           <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Precio Unitario ($)</label>
+            <input type="number" step="0.01" id="adminPrecio" class="w-full border border-gray-300 rounded-lg p-2">
+          </div>
+          <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">Fecha Inicio</label>
             <input type="date" id="adminFechaInicio" required class="w-full border border-gray-300 rounded-lg p-2">
           </div>
@@ -243,7 +249,7 @@
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzItcHYHiJ8o48JHMvlCLBiQq--ZijgVw-g60me2x7yhhjN9ILuIoveDyoDOHNjbo25hA/exec';
+    const SCRIPT_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
     let currentUser = null;
     let ocsData = [];
     let filtroActual = 'Todos';
@@ -300,7 +306,8 @@
         ocsData = await llamarScript(url);
         aplicarFiltros();
       } catch (error) {
-        document.getElementById('ocTable').innerHTML = '<tr><td colspan="8" class="p-8 text-center text-red-500">Error al cargar</td></tr>';
+        console.error('Error cargando OCs:', error);
+        document.getElementById('ocTable').innerHTML = '<tr><td colspan="9" class="p-8 text-center text-red-500">Error al cargar. Verifica la consola (F12)</td></tr>';
       }
     }
 
@@ -321,7 +328,7 @@
     function renderTable(data) {
       const tbody = document.getElementById('ocTable');
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-gray-500">No hay OCs</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-500">No hay OCs</td></tr>';
         return;
       }
       
@@ -336,13 +343,22 @@
           <button onclick='editarOC(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-2 py-1 rounded text-xs mr-1"><i class="fas fa-edit"></i></button>
           <button onclick='eliminarOC(${oc.rowNumber})' class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs mr-1"><i class="fas fa-trash"></i></button>
           <select onchange='cambiarEstado(${oc.rowNumber}, this.value)' class="text-xs border rounded p-1">
-            <option value="">Cambiar estado</option>
+            <option value="">Estado</option>
             <option value="Inicio">Inicio</option>
             <option value="En Producción">En Producción</option>
             <option value="Por Entregar">Por Entregar</option>
             <option value="Terminado">Terminado</option>
           </select>
-        ` : `<button onclick='openDetailModal(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1.5 rounded text-xs"><i class="fas fa-eye mr-1"></i> Detalle</button>`;
+        ` : `
+          <select onchange='cambiarEstado(${oc.rowNumber}, this.value)' class="text-xs border rounded p-1 mr-1">
+            <option value="${oc.estado || ''}">${oc.estado || 'Sin estado'}</option>
+            <option value="Inicio">Inicio</option>
+            <option value="En Producción">En Producción</option>
+            <option value="Por Entregar">Por Entregar</option>
+            <option value="Terminado">Terminado</option>
+          </select>
+          <button onclick='openDetailModal(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded text-xs"><i class="fas fa-eye"></i></button>
+        `;
         
         return `
           <tr class="hover:bg-gray-50 transition ${esRetrasada ? 'bg-red-50' : ''}">
@@ -350,6 +366,7 @@
             <td class="p-4 font-mono text-xs">${oc.codigo}</td>
             <td class="p-4">${oc.descripcion}</td>
             <td class="p-4 font-semibold">${oc.cantidad_total} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
+            <td class="p-4 font-semibold text-green-600">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
             <td class="p-4 font-semibold text-green-600">${oc.stock_almacen || 0} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
             <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${estadoClass}">${oc.estado}</span></td>
             <td class="p-4 text-sm ${esRetrasada ? 'text-red-600 font-bold' : 'text-gray-600'}">${formatDate(oc.fecha_entrega)} ${esRetrasada ? '<i class="fas fa-exclamation-triangle"></i>' : ''}</td>
@@ -415,6 +432,7 @@
       document.getElementById('modalProducto').innerText = `${oc.codigo} - ${oc.descripcion}`;
       document.getElementById('modalCantidad').innerText = `${oc.cantidad_total} ${oc.unidad}`;
       document.getElementById('modalStock').innerText = `${oc.stock_almacen || 0} ${oc.unidad}`;
+      document.getElementById('modalPrecio').innerText = `$${Number(oc.precio_unitario || 0).toFixed(2)}`;
       document.getElementById('modalFecha').innerText = formatDate(oc.fecha_entrega);
       document.getElementById('modalEstado').innerText = oc.estado;
       document.getElementById('modalUnidad').value = oc.unidad;
@@ -480,6 +498,7 @@
       document.getElementById('adminDescripcion').value = oc.descripcion;
       document.getElementById('adminCantidad').value = oc.cantidad_total;
       document.getElementById('adminUnidad').value = oc.unidad;
+      document.getElementById('adminPrecio').value = oc.precio_unitario || 0;
       document.getElementById('adminFechaInicio').value = formatDate(oc.fecha_inicio);
       document.getElementById('adminFechaEntrega').value = formatDate(oc.fecha_entrega);
       document.getElementById('adminEstado').value = oc.estado;
@@ -496,6 +515,7 @@
         descripcion: document.getElementById('adminDescripcion').value,
         cantidad_total: document.getElementById('adminCantidad').value,
         unidad: document.getElementById('adminUnidad').value,
+        precio_unitario: document.getElementById('adminPrecio').value,
         fecha_inicio: document.getElementById('adminFechaInicio').value,
         fecha_entrega: document.getElementById('adminFechaEntrega').value,
         estado: document.getElementById('adminEstado').value,
@@ -548,6 +568,7 @@
         'Descripción': oc.descripcion,
         'Cantidad Total': oc.cantidad_total,
         'Unidad': oc.unidad,
+        'Precio Unitario': oc.precio_unitario || 0,
         'Stock Almacén': oc.stock_almacen || 0,
         'Estado': oc.estado,
         'F. Inicio': formatDate(oc.fecha_inicio),
