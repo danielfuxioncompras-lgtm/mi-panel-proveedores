@@ -1,645 +1,1004 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Proveedores</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-  <style>
-    @media print {
-      .no-print { display: none !important; }
-      body { background: white; }
-      .shadow-md, .shadow-lg { box-shadow: none !important; border: 1px solid #ddd; }
-    }
-    .badge-Inicio { background: #DBEAFE; color: #1E40AF; }
-    .badge-En-Producción { background: #FEF3C7; color: #92400E; }
-    .badge-Por-Entregar { background: #FCE7F3; color: #9D174D; }
-    .badge-Terminado { background: #D1FAE5; color: #065F46; }
-    .badge-Retrasado { background: #FEE2E2; color: #991B1B; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de OCs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F5F1;
+    --surface:#FFFFFF;
+    --ink:#1A1F2B;
+    --ink-soft:#5B6270;
+    --primary:#223047;
+    --primary-ink:#EDEFF3;
+    --accent:#5B3FD9;
+    --accent-ink:#FFFFFF;
+    --border:#DEDBD1;
+    --danger:#C0392B;
+    --danger-bg:#FBEAE8;
+    --success:#2E7D5B;
+    --success-bg:#E7F2EC;
+    --warning:#9A6B00;
+    --warning-bg:#FBF1DC;
+    --info:#2F6FA8;
+    --info-bg:#E8F0F7;
+    --neutral:#5B6270;
+    --neutral-bg:#EBEAE5;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+  .hidden{display:none !important;}
+
+  /* ---------- Login ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;
+    max-width:380px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    padding:36px 32px;
+  }
+  .login-mark{
+    width:40px;height:40px;
+    background:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;
+    margin-bottom:20px;
+  }
+  .login-card h1{
+    font-size:19px;
+    margin:0 0 4px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .login-card p{
+    margin:0 0 24px;
+    color:var(--ink-soft);
+    font-size:13.5px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:14px;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--primary);
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:10px 16px;
+    border:1px solid transparent;
+    font-size:13.5px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:#182231;}
+  .btn-accent{background:var(--accent);color:#fff;}
+  .btn-accent:hover{background:#4B32B8;}
+  .btn-outline{background:#fff;border-color:var(--border);color:var(--ink);}
+  .btn-outline:hover{border-color:var(--ink-soft);}
+  .btn-danger-text{background:transparent;color:var(--danger);border:none;padding:4px;}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;}
+  #loginError{
+    color:var(--danger);
+    font-size:13px;
+    margin-top:12px;
+    display:none;
+  }
+
+  /* ---------- App shell ---------- */
+  header.app-header{
+    background:var(--primary);
+    color:var(--primary-ink);
+    padding:14px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  header.app-header .brand{
+    display:flex;align-items:center;gap:10px;
+  }
+  header.app-header .brand .mark{
+    width:28px;height:28px;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+  }
+  header.app-header h1{
+    font-size:15px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.app-header .userbox{
+    display:flex;align-items:center;gap:12px;
+    font-size:13px;
+  }
+  header.app-header .userbox .rolechip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    padding:3px 8px;
+    background:rgba(255,255,255,.12);
+  }
+  header.app-header .logout{
+    background:transparent;border:1px solid rgba(255,255,255,.3);
+    color:var(--primary-ink);padding:6px 11px;font-size:12.5px;cursor:pointer;
+    font-family:inherit;
+  }
+  header.app-header .logout:hover{background:rgba(255,255,255,.1);}
+
+  main{
+    max-width:1280px;
+    margin:0 auto;
+    padding:24px;
+  }
+
+  /* ---------- Dashboard cards ---------- */
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:1px;
+    background:var(--border);
+    border:1px solid var(--border);
+    margin-bottom:24px;
+  }
+  .card{
+    background:var(--surface);
+    padding:16px 18px;
+    border-top:3px solid var(--primary);
+  }
+  .card.c-kg{border-top-color:var(--info);}
+  .card.c-mill{border-top-color:var(--accent);}
+  .card.c-alert{border-top-color:var(--danger);}
+  .card .label{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-weight:500;
+    margin-bottom:8px;
+  }
+  .card .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:26px;
+    font-weight:600;
+    letter-spacing:-0.02em;
+  }
+  .card.c-alert .value{color:var(--danger);}
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .search-wrap{
+    position:relative;
+    flex:1 1 240px;
+    min-width:200px;
+  }
+  .search-wrap input{
+    width:100%;
+    padding:9px 12px 9px 34px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:13.5px;
+    font-family:inherit;
+  }
+  .search-wrap input:focus{outline:none;border-color:var(--primary);}
+  .search-wrap svg{
+    position:absolute;left:11px;top:50%;transform:translateY(-50%);
+    width:15px;height:15px;color:var(--ink-soft);
+  }
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    padding:7px 12px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+  }
+  .chip.active{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+  .toolbar-actions{display:flex;gap:8px;margin-left:auto;}
+
+  /* ---------- Table ---------- */
+  .table-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    overflow-x:auto;
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:920px;}
+  thead th{
+    text-align:left;
+    padding:10px 12px;
+    background:#FAFAF7;
+    border-bottom:1px solid var(--border);
+    color:var(--ink-soft);
+    font-weight:600;
+    font-size:11.5px;
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.retrasado{background:var(--danger-bg);}
+  tbody tr:hover{background:#FAFAF7;}
+  tbody tr.retrasado:hover{background:#F7DFDC;}
+  .oc-num{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .tag{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:10.5px;font-weight:600;
+    padding:2px 6px;
+    background:var(--danger);color:#fff;
+    margin-left:6px;
+  }
+  select.estado-select{
+    font-family:inherit;
+    font-size:12.5px;
+    padding:5px 6px;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--ink);
+    min-width:126px;
+  }
+  select.estado-select.est-inicio{border-left:3px solid var(--neutral);}
+  select.estado-select.est-produccion{border-left:3px solid var(--warning);}
+  select.estado-select.est-entregar{border-left:3px solid var(--info);}
+  select.estado-select.est-terminado{border-left:3px solid var(--success);}
+  .row-actions{display:flex;gap:4px;align-items:center;}
+  .icon-btn{
+    background:transparent;border:1px solid var(--border);
+    width:28px;height:28px;
+    display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:13px;
+  }
+  .icon-btn:hover{border-color:var(--ink-soft);}
+  .empty-state{
+    padding:48px 24px;text-align:center;color:var(--ink-soft);font-size:13.5px;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(26,31,43,.5);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal{
+    background:#fff;
+    width:100%;
+    max-width:560px;
+    max-height:88vh;
+    overflow-y:auto;
+    border:1px solid var(--border);
+  }
+  .modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 22px;
+    border-bottom:1px solid var(--border);
+  }
+  .modal-header h2{font-size:15.5px;margin:0;font-weight:600;}
+  .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-soft);line-height:1;}
+  .modal-body{padding:20px 22px;}
+  .modal-footer{
+    padding:16px 22px;
+    border-top:1px solid var(--border);
+    display:flex;justify-content:flex-end;gap:8px;
+  }
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+  .detalle-info{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;
+    padding:14px;background:#FAFAF7;border:1px solid var(--border);
+    margin-bottom:18px;font-size:13px;
+  }
+  .detalle-info .k{color:var(--ink-soft);font-size:11px;margin-bottom:2px;}
+  .detalle-info .v{font-weight:500;}
+  .entregas-list{list-style:none;margin:0 0 18px;padding:0;border:1px solid var(--border);}
+  .entregas-list li{
+    padding:9px 12px;font-size:12.5px;
+    border-bottom:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace;
+    display:flex;justify-content:space-between;
+  }
+  .entregas-list li:last-child{border-bottom:none;}
+  .entregas-empty{padding:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;border:1px dashed var(--border);margin-bottom:18px;}
+  h3.subhead{font-size:12.5px;text-transform:none;color:var(--ink-soft);font-weight:600;margin:0 0 10px;}
+
+  /* ---------- Print ---------- */
+  @media print{
+    header.app-header, .toolbar, .cards, .row-actions-col, .no-print{display:none !important;}
+    body{background:#fff;}
+    main{padding:0;max-width:none;}
+    .table-wrap{border:none;}
+    table{min-width:0;font-size:11px;}
+  }
+
+  @media (max-width:720px){
+    .cards{grid-template-columns:repeat(2,1fr);}
+    .toolbar-actions{margin-left:0;width:100%;}
+    .grid-2{grid-template-columns:1fr;}
+  }
+</style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
 
-  <!-- LOGIN -->
-  <div id="loginScreen" class="min-h-screen flex items-center justify-center">
-    <div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-      <div class="text-center mb-6">
-        <i class="fas fa-boxes text-5xl text-blue-600 mb-4"></i>
-        <h1 class="text-2xl font-bold text-gray-800">Portal de Proveedores</h1>
-        <p class="text-gray-500 mt-2">Gestión de Órdenes de Compra</p>
-      </div>
-      <form id="loginForm" class="space-y-4">
-        <input type="email" id="loginEmail" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Email">
-        <input type="password" id="loginPassword" required class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Contraseña">
-        <button type="submit" id="btnLogin" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Iniciar Sesión</button>
-      </form>
-      <div id="loginError" class="hidden mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded text-center">Credenciales incorrectas</div>
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <form class="login-card" id="loginForm">
+    <div class="login-mark">OC</div>
+    <h1>Control de Órdenes de Compra</h1>
+    <p>Ingresa con tu correo y contraseña.</p>
+    <div class="field">
+      <label for="loginEmail">Correo</label>
+      <input type="email" id="loginEmail" required autocomplete="username">
     </div>
-  </div>
+    <div class="field">
+      <label for="loginPassword">Contraseña</label>
+      <input type="password" id="loginPassword" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Ingresar</button>
+    <div id="loginError"></div>
+  </form>
+</div>
 
-  <!-- DASHBOARD -->
-  <div id="mainScreen" class="hidden">
-    <nav class="bg-blue-600 text-white p-4 shadow-lg no-print">
-      <div class="max-w-7xl mx-auto flex justify-between items-center flex-wrap gap-4">
-        <div>
-          <h1 class="text-xl font-bold"><i class="fas fa-chart-line mr-2"></i> Dashboard de OCs</h1>
-          <p class="text-xs text-blue-100 mt-1" id="userRole"></p>
-        </div>
-        <div class="flex items-center space-x-3">
-          <span id="userName" class="text-sm font-medium bg-blue-700 px-3 py-1.5 rounded-lg"></span>
-          <button onclick="exportExcel()" class="bg-green-600 hover:bg-green-700 px-3 py-1.5 rounded transition text-sm">
-            <i class="fas fa-file-excel mr-1"></i> Excel
-          </button>
-          <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded transition text-sm">
-            <i class="fas fa-file-pdf mr-1"></i> PDF
-          </button>
-          <button id="btnAdmin" onclick="openAdminModal()" class="hidden bg-purple-600 hover:bg-purple-700 px-3 py-1.5 rounded transition text-sm">
-            <i class="fas fa-plus mr-1"></i> Nueva OC
-          </button>
-          <button onclick="logout()" class="bg-blue-700 hover:bg-blue-800 px-3 py-1.5 rounded transition text-sm">
-            <i class="fas fa-sign-out-alt mr-1"></i> Salir
-          </button>
-        </div>
+<!-- ============ APP ============ -->
+<div id="appScreen" class="hidden">
+  <header class="app-header">
+    <div class="brand">
+      <div class="mark">OC</div>
+      <h1>Control de Órdenes de Compra</h1>
+    </div>
+    <div class="userbox">
+      <span id="userName"></span>
+      <span class="rolechip" id="userRol"></span>
+      <button class="logout" id="logoutBtn">Salir</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="cards">
+      <div class="card">
+        <div class="label">Total OCs</div>
+        <div class="value" id="cardTotal">0</div>
       </div>
-    </nav>
-
-    <div class="max-w-7xl mx-auto p-6">
-      <!-- Tarjetas de Resumen -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 no-print">
-        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
-          <h3 class="text-gray-500 text-xs font-semibold">Total OCs</h3>
-          <p class="text-2xl font-bold text-gray-800" id="totalOCs">0</p>
-        </div>
-        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-orange-500">
-          <h3 class="text-gray-500 text-xs font-semibold">Total en Kilos</h3>
-          <p class="text-2xl font-bold text-gray-800" id="totalKg">0</p>
-        </div>
-        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-purple-500">
-          <h3 class="text-gray-500 text-xs font-semibold">Total en Millares</h3>
-          <p class="text-2xl font-bold text-gray-800" id="totalMill">0</p>
-        </div>
-        <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-red-500">
-          <h3 class="text-gray-500 text-xs font-semibold">OCs Retrasadas</h3>
-          <p class="text-2xl font-bold text-red-600" id="totalRetrasadas">0</p>
-        </div>
+      <div class="card c-kg">
+        <div class="label">Total en Kilos</div>
+        <div class="value" id="cardKg">0</div>
       </div>
-
-      <!-- Alertas de retraso -->
-      <div id="alertasRetraso" class="mb-6 no-print"></div>
-
-      <!-- Buscador -->
-      <div class="bg-white p-4 rounded-xl shadow-md mb-6 no-print flex items-center">
-        <i class="fas fa-search text-gray-400 text-xl ml-3"></i>
-        <input type="text" id="searchInput" placeholder="Buscar por Nº OC, Código o Descripción..." class="w-full p-2 ml-3 outline-none text-gray-700">
+      <div class="card c-mill">
+        <div class="label">Total en Millares</div>
+        <div class="value" id="cardMill">0</div>
       </div>
-
-      <!-- Filtro de estado -->
-      <div class="bg-white p-4 rounded-xl shadow-md mb-6 no-print flex flex-wrap gap-2 items-center">
-        <span class="text-sm font-semibold text-gray-600 mr-2">Filtrar por estado:</span>
-        <button onclick="filtrarEstado('Todos')" class="px-3 py-1 rounded-full text-xs bg-blue-600 text-white">Todos</button>
-        <button onclick="filtrarEstado('Inicio')" class="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-700">Inicio</button>
-        <button onclick="filtrarEstado('En Producción')" class="px-3 py-1 rounded-full text-xs bg-yellow-100 text-yellow-700">En Producción</button>
-        <button onclick="filtrarEstado('Por Entregar')" class="px-3 py-1 rounded-full text-xs bg-pink-100 text-pink-700">Por Entregar</button>
-        <button onclick="filtrarEstado('Terminado')" class="px-3 py-1 rounded-full text-xs bg-green-100 text-green-700">Terminado</button>
-      </div>
-
-      <!-- Tabla -->
-      <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="p-6 border-b">
-          <h2 class="text-xl font-bold text-gray-800">Órdenes de Compra</h2>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm">
-            <thead class="bg-gray-50 border-b">
-              <tr>
-                <th class="text-left p-4 font-semibold text-gray-600">Nº OC</th>
-                <th class="text-left p-4 font-semibold text-gray-600">Código</th>
-                <th class="text-left p-4 font-semibold text-gray-600">Descripción</th>
-                <th class="text-left p-4 font-semibold text-gray-600">Cantidad</th>
-                <th class="text-left p-4 font-semibold text-gray-600">Precio Unit.</th>
-                <th class="text-left p-4 font-semibold text-gray-600">Stock Almacén</th>
-                <th class="text-left p-4 font-semibold text-gray-600">Estado</th>
-                <th class="text-left p-4 font-semibold text-gray-600">F. Entrega</th>
-                <th class="text-left p-4 font-semibold text-gray-600 no-print">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="ocTable" class="divide-y divide-gray-100">
-              <tr><td colspan="9" class="p-8 text-center text-gray-500"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2">Cargando...</p></td></tr>
-            </tbody>
-          </table>
-        </div>
+      <div class="card c-alert">
+        <div class="label">OCs Retrasadas</div>
+        <div class="value" id="cardRetrasadas">0</div>
       </div>
     </div>
-  </div>
 
-  <!-- MODAL DETALLE -->
-  <div id="detailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="p-6 border-b bg-gray-50 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-gray-800">Detalle de OC</h3>
-        <button onclick="closeModal()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar por N° OC, código o descripción...">
       </div>
-      <div class="p-6 space-y-6">
-        <div class="grid grid-cols-2 gap-4 text-sm bg-blue-50 p-4 rounded-lg">
-          <div><span class="font-semibold text-gray-600">Nº OC:</span> <span id="modalNumeroOC" class="font-bold text-blue-700"></span></div>
-          <div><span class="font-semibold text-gray-600">Producto:</span> <span id="modalProducto"></span></div>
-          <div><span class="font-semibold text-gray-600">Cantidad Total:</span> <span id="modalCantidad"></span></div>
-          <div><span class="font-semibold text-gray-600">Stock Almacén:</span> <span id="modalStock" class="font-bold text-green-600"></span></div>
-          <div><span class="font-semibold text-gray-600">Precio Unitario:</span> <span id="modalPrecio" class="font-bold text-green-600"></span></div>
-          <div><span class="font-semibold text-gray-600">F. Entrega:</span> <span id="modalFecha"></span></div>
-          <div><span class="font-semibold text-gray-600">Estado:</span> <span id="modalEstado"></span></div>
-        </div>
-        
-        <div>
-          <h4 class="font-bold text-gray-700 mb-2"><i class="fas fa-history mr-2"></i>Historial de Entregas</h4>
-          <div id="modalHistorial" class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm min-h-[60px]"></div>
-        </div>
-
-        <form id="entregaForm" class="border-t pt-4">
-          <input type="hidden" id="modalRowNumber">
-          <input type="hidden" id="modalUnidad">
-          <h4 class="font-bold text-gray-700 mb-3"><i class="fas fa-plus-circle mr-2 text-green-600"></i>Registrar Entrega</h4>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">Fecha</label>
-              <input type="date" id="nuevaFecha" required class="w-full border border-gray-300 rounded-lg p-2">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad</label>
-              <input type="number" id="nuevaCantidad" required class="w-full border border-gray-300 rounded-lg p-2">
-            </div>
-          </div>
-          <div class="mt-4 flex space-x-3">
-            <button type="button" onclick="closeModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg">Cancelar</button>
-            <button type="submit" class="flex-1 bg-green-600 text-white font-bold py-2 rounded-lg">Guardar Entrega</button>
-          </div>
-        </form>
+      <div class="chips" id="filterChips">
+        <button class="chip active" data-estado="Todos">Todos</button>
+        <button class="chip" data-estado="Inicio">Inicio</button>
+        <button class="chip" data-estado="En Producción">En Producción</button>
+        <button class="chip" data-estado="Por Entregar">Por Entregar</button>
+        <button class="chip" data-estado="Terminado">Terminado</button>
+      </div>
+      <div class="toolbar-actions no-print">
+        <button class="btn btn-outline" id="btnExport">Exportar Excel</button>
+        <button class="btn btn-outline" id="btnPrint">Imprimir / PDF</button>
+        <button class="btn btn-accent hidden" id="btnNuevaOC">+ Nueva OC</button>
       </div>
     </div>
-  </div>
 
-  <!-- MODAL ADMIN -->
-  <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
-    <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-      <div class="p-6 border-b bg-purple-50 flex justify-between items-center">
-        <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-cog mr-2"></i>Panel de Administración</h3>
-        <button onclick="closeAdminModal()" class="text-gray-500 hover:text-red-500 text-2xl">&times;</button>
-      </div>
-      <div class="p-6 space-y-4">
-        <form id="adminForm" class="grid grid-cols-2 gap-4">
-          <input type="hidden" id="adminRowNumber">
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Nº OC</label>
-            <input type="text" id="adminNumeroOC" required class="w-full border border-gray-300 rounded-lg p-2">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr id="tableHeadRow"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state hidden" id="emptyState">No hay órdenes de compra que coincidan con la búsqueda.</div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ MODAL: Nueva/Editar OC ============ -->
+<div class="modal-overlay hidden" id="ocModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="ocModalTitle">Nueva Orden de Compra</h2>
+      <button class="modal-close" id="ocModalClose">✕</button>
+    </div>
+    <form id="ocForm">
+      <div class="modal-body">
+        <input type="hidden" id="f_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Número de OC</label>
+            <input type="text" id="f_numero_oc" required inputmode="numeric">
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Código</label>
-            <input type="text" id="adminCodigo" required class="w-full border border-gray-300 rounded-lg p-2">
+          <div class="field">
+            <label>Código</label>
+            <input type="text" id="f_codigo" required>
           </div>
-          <div class="col-span-2">
-            <label class="block text-xs font-medium text-gray-600 mb-1">Descripción</label>
-            <input type="text" id="adminDescripcion" required class="w-full border border-gray-300 rounded-lg p-2">
+        </div>
+        <div class="field">
+          <label>Descripción</label>
+          <input type="text" id="f_descripcion" required>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Cantidad total</label>
+            <input type="number" id="f_cantidad_total" min="0" step="0.01" required>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Cantidad Total</label>
-            <input type="number" id="adminCantidad" required class="w-full border border-gray-300 rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Unidad</label>
-            <select id="adminUnidad" class="w-full border border-gray-300 rounded-lg p-2">
+          <div class="field">
+            <label>Unidad</label>
+            <select id="f_unidad" required>
               <option value="Kg">Kg</option>
               <option value="Mill">Mill</option>
             </select>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Precio Unitario ($)</label>
-            <input type="number" step="0.01" id="adminPrecio" class="w-full border border-gray-300 rounded-lg p-2">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Fecha de inicio</label>
+            <input type="date" id="f_fecha_inicio" required>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Fecha Inicio</label>
-            <input type="date" id="adminFechaInicio" required class="w-full border border-gray-300 rounded-lg p-2">
+          <div class="field">
+            <label>Fecha de entrega</label>
+            <input type="date" id="f_fecha_entrega" required>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Fecha Entrega</label>
-            <input type="date" id="adminFechaEntrega" required class="w-full border border-gray-300 rounded-lg p-2">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Estado</label>
-            <select id="adminEstado" class="w-full border border-gray-300 rounded-lg p-2">
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Estado</label>
+            <select id="f_estado" required>
               <option value="Inicio">Inicio</option>
               <option value="En Producción">En Producción</option>
               <option value="Por Entregar">Por Entregar</option>
               <option value="Terminado">Terminado</option>
             </select>
           </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Proveedor (email)</label>
-            <input type="email" id="adminProveedor" required class="w-full border border-gray-300 rounded-lg p-2">
+          <div class="field">
+            <label>Precio unitario (USD)</label>
+            <input type="number" id="f_precio_unitario" min="0" step="0.01" required>
           </div>
-          <div class="col-span-2 flex space-x-3 pt-2">
-            <button type="button" onclick="closeAdminModal()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg">Cancelar</button>
-            <button type="submit" id="adminSubmitBtn" class="flex-1 bg-purple-600 text-white font-bold py-2 rounded-lg">Guardar OC</button>
-          </div>
-        </form>
+        </div>
+        <div class="field">
+          <label>Correo del proveedor</label>
+          <input type="email" id="f_email_proveedor" required placeholder="proveedor@ejemplo.com">
+        </div>
       </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="ocModalCancel">Cancelar</button>
+        <button type="submit" class="btn btn-accent" id="ocModalSave">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ MODAL: Detalle (Proveedor) ============ -->
+<div class="modal-overlay hidden" id="detalleModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Detalle de OC</h2>
+      <button class="modal-close" id="detalleModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detalle-info" id="detalleInfo"></div>
+      <h3 class="subhead">Historial de entregas</h3>
+      <ul class="entregas-list hidden" id="entregasList"></ul>
+      <div class="entregas-empty hidden" id="entregasEmpty">Aún no se han registrado entregas.</div>
+      <h3 class="subhead">Registrar nueva entrega</h3>
+      <form id="entregaForm">
+        <input type="hidden" id="e_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Fecha de entrega</label>
+            <input type="date" id="e_fecha" required>
+          </div>
+          <div class="field">
+            <label>Cantidad</label>
+            <input type="number" id="e_cantidad" min="0.01" step="0.01" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnRegistrarEntrega">Registrar entrega</button>
+      </form>
     </div>
   </div>
+</div>
 
-  <script>
-    // ⚠️ REEMPLAZA ESTA URL CON LA TUYA
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzS0XphX1RR2Ey9_boQzir6OFWK77wT78YPkgHnGIgeE2YWZLRS73EXdwJrO0ogl0hJUg/exec';
-    let currentUser = null;
-    let ocsData = [];
-    let filtroActual = 'Todos';
+<script>
+/* =========================================================
+   CONFIGURACIÓN
+   Pega aquí la URL de tu Apps Script publicado como Web App
+   (Implementar > Nueva implementación > Aplicación web)
+========================================================= */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwBi7CIhrB_NkcEvjbXGi_WKFs8Ip5MEMlQXJJSyg-BIaBiTT1k6N2y6STc_p4tgvLWUg/exec';
 
-    async function llamarScript(url) {
-      const response = await fetch(url, { redirect: 'follow' });
-      return await response.json();
+let currentUser = null;
+let allOcs = [];
+let currentFilter = 'Todos';
+let searchTerm = '';
+
+const ESTADOS = ['Inicio', 'En Producción', 'Por Entregar', 'Terminado'];
+const ESTADO_CLASS = {
+  'Inicio': 'est-inicio',
+  'En Producción': 'est-produccion',
+  'Por Entregar': 'est-entregar',
+  'Terminado': 'est-terminado'
+};
+
+/* ---------------- API ---------------- */
+async function apiCall(action, params = {}) {
+  const fd = new FormData();
+  fd.append('action', action);
+  Object.entries(params).forEach(([k, v]) => fd.append(k, v === undefined || v === null ? '' : v));
+  const res = await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow' });
+  if (!res.ok) throw new Error('Error de red: ' + res.status);
+  return res.json();
+}
+
+/* ---------------- Sesión ---------------- */
+function saveSession(user) {
+  localStorage.setItem('oc_session', JSON.stringify(user));
+}
+function loadSession() {
+  try {
+    const raw = localStorage.getItem('oc_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearSession() {
+  localStorage.removeItem('oc_session');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = loadSession();
+  if (saved && saved.email && saved.rol) {
+    currentUser = saved;
+    enterApp();
+  }
+  bindEvents();
+});
+
+/* ---------------- Login ---------------- */
+document.getElementById('loginForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errBox = document.getElementById('loginError');
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Ingresando...';
+  try {
+    const result = await apiCall('login', { email, password });
+    if (result.success) {
+      currentUser = { email: result.email, nombre: result.nombre, rol: result.rol };
+      saveSession(currentUser);
+      enterApp();
+    } else {
+      errBox.textContent = result.message || 'Correo o contraseña incorrectos.';
+      errBox.style.display = 'block';
+    }
+  } catch (e) {
+    errBox.textContent = 'No se pudo conectar. Revisa la URL de Apps Script o tu conexión.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ingresar';
+  }
+});
+
+function enterApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  document.getElementById('userName').textContent = currentUser.nombre;
+  document.getElementById('userRol').textContent = currentUser.rol;
+  if (currentUser.rol === 'Admin') {
+    document.getElementById('btnNuevaOC').classList.remove('hidden');
+  }
+  renderTableHead();
+  loadOCs();
+}
+
+function bindEvents() {
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    clearSession();
+    currentUser = null;
+    location.reload();
+  });
+
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    searchTerm = e.target.value.trim().toLowerCase();
+    renderTable();
+  });
+
+  document.getElementById('filterChips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.estado;
+    renderTable();
+  });
+
+  document.getElementById('btnExport').addEventListener('click', exportExcel);
+  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+
+  document.getElementById('btnNuevaOC').addEventListener('click', () => openOcModal(null));
+  document.getElementById('ocModalClose').addEventListener('click', closeOcModal);
+  document.getElementById('ocModalCancel').addEventListener('click', closeOcModal);
+  document.getElementById('ocForm').addEventListener('submit', submitOcForm);
+
+  document.getElementById('detalleModalClose').addEventListener('click', closeDetalleModal);
+  document.getElementById('entregaForm').addEventListener('submit', submitEntregaForm);
+}
+
+/* ---------------- Carga de datos ---------------- */
+async function loadOCs() {
+  try {
+    const result = await apiCall('getOCs', { email: currentUser.email, rol: currentUser.rol });
+    if (result.success) {
+      allOcs = result.ocs || [];
+      renderCards();
+      renderTable();
+    } else {
+      alert('No se pudieron cargar las OCs: ' + (result.message || ''));
+    }
+  } catch (e) {
+    alert('Error de conexión al cargar las OCs.');
+  }
+}
+
+function isRetrasado(oc) {
+  if (oc.estado === 'Terminado') return false;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const fe = new Date(oc.fecha_entrega + 'T00:00:00');
+  if (isNaN(fe.getTime())) return false;
+  return fe < hoy;
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderCards() {
+  const total = allOcs.length;
+  const totalKg = allOcs.filter(o => o.unidad === 'Kg').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const totalMill = allOcs.filter(o => o.unidad === 'Mill').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const retrasadas = allOcs.filter(isRetrasado).length;
+
+  document.getElementById('cardTotal').textContent = total;
+  document.getElementById('cardKg').textContent = totalKg.toLocaleString('es-PE');
+  document.getElementById('cardMill').textContent = totalMill.toLocaleString('es-PE');
+  document.getElementById('cardRetrasadas').textContent = retrasadas;
+}
+
+/* ---------------- Tabla ---------------- */
+function renderTableHead() {
+  const isAdmin = currentUser.rol === 'Admin';
+  const cols = ['N° OC', 'Código', 'Descripción', 'Cantidad', 'Fecha entrega', 'Estado', 'Stock almacén'];
+  if (isAdmin) {
+    cols.push('Proveedor', 'Acciones');
+  } else {
+    cols.push('Precio unit. (USD)', 'Detalle');
+  }
+  document.getElementById('tableHeadRow').innerHTML = cols.map(c => `<th>${c}</th>`).join('');
+}
+
+function getFilteredOcs() {
+  return allOcs.filter(oc => {
+    if (currentFilter !== 'Todos' && oc.estado !== currentFilter) return false;
+    if (searchTerm) {
+      const hay = (String(oc.numero_oc) + ' ' + oc.codigo + ' ' + oc.descripcion).toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
+    }
+    return true;
+  });
+}
+
+function renderTable() {
+  const isAdmin = currentUser.rol === 'Admin';
+  const filtered = getFilteredOcs();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = filtered.map(oc => {
+    const retrasado = isRetrasado(oc);
+    const estadoClass = ESTADO_CLASS[oc.estado] || '';
+    const estadoOptions = ESTADOS.map(es =>
+      `<option value="${es}" ${es === oc.estado ? 'selected' : ''}>${es}</option>`
+    ).join('');
+
+    const estadoCell = `
+      <select class="estado-select ${estadoClass}" data-row="${oc.rowNumber}" onchange="cambiarEstado(${oc.rowNumber}, this.value)">
+        ${estadoOptions}
+      </select>`;
+
+    let lastCols;
+    if (isAdmin) {
+      lastCols = `
+        <td>${oc.email_proveedor || ''}</td>
+        <td class="row-actions row-actions-col">
+          <button class="icon-btn" title="Editar" onclick="openOcModal(${oc.rowNumber})">✏️</button>
+          <button class="icon-btn" title="Eliminar" onclick="eliminarOC(${oc.rowNumber})">🗑️</button>
+        </td>`;
+    } else {
+      lastCols = `
+        <td class="mono">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
+        <td class="row-actions row-actions-col">
+          <button class="icon-btn" title="Detalle" onclick="openDetalleModal(${oc.rowNumber})">👁️</button>
+        </td>`;
     }
 
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = document.getElementById('btnLogin');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Conectando...';
-      btn.disabled = true;
-      document.getElementById('loginError').classList.add('hidden');
+    return `
+      <tr class="${retrasado ? 'retrasado' : ''}">
+        <td class="oc-num">${oc.numero_oc}</td>
+        <td>${oc.codigo}</td>
+        <td>${oc.descripcion}</td>
+        <td class="mono">${Number(oc.cantidad_total || 0).toLocaleString('es-PE')} ${oc.unidad}</td>
+        <td class="mono">${oc.fecha_entrega || ''}${retrasado ? '<span class="tag">Retrasado</span>' : ''}</td>
+        <td>${estadoCell}</td>
+        <td class="mono">${Number(oc.stock_almacen || 0).toLocaleString('es-PE')}</td>
+        ${lastCols}
+      </tr>`;
+  }).join('');
+}
 
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      const url = `${SCRIPT_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-
-      try {
-        const result = await llamarScript(url);
-        if (result.success) {
-          currentUser = result;
-          localStorage.setItem('currentUser', JSON.stringify(result));
-          showMainScreen();
-        } else {
-          document.getElementById('loginError').classList.remove('hidden');
-        }
-      } catch (error) {
-        alert('Error de conexión.');
-      } finally {
-        btn.innerHTML = 'Iniciar Sesión';
-        btn.disabled = false;
-      }
-    });
-
-    function showMainScreen() {
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('mainScreen').classList.remove('hidden');
-      document.getElementById('userName').innerText = ` ${currentUser.nombre}`;
-      document.getElementById('userRole').innerText = currentUser.rol === 'Admin' ? '🔧 Modo Administrador' : ' Portal de Proveedor';
-      
-      if (currentUser.rol === 'Admin') {
-        document.getElementById('btnAdmin').classList.remove('hidden');
-      }
-      
+/* ---------------- Cambiar estado ---------------- */
+async function cambiarEstado(rowNumber, estado) {
+  if (!estado) return;
+  try {
+    const result = await apiCall('updateEstado', { rowNumber, estado });
+    if (result.success) {
+      loadOCs();
+    } else {
+      alert('No se pudo actualizar el estado: ' + (result.message || ''));
       loadOCs();
     }
+  } catch (e) {
+    alert('Error de conexión al actualizar el estado.');
+  }
+}
 
-    async function loadOCs() {
-      const url = `${SCRIPT_URL}?action=getOCs&email=${encodeURIComponent(currentUser.email)}&rol=${encodeURIComponent(currentUser.rol)}`;
-      try {
-        ocsData = await llamarScript(url);
-        aplicarFiltros();
-      } catch (error) {
-        console.error('Error cargando OCs:', error);
-        document.getElementById('ocTable').innerHTML = '<tr><td colspan="9" class="p-8 text-center text-red-500">Error al cargar. Verifica la consola (F12)</td></tr>';
-      }
+/* ---------------- Modal Nueva/Editar OC (Admin) ---------------- */
+function openOcModal(rowNumber) {
+  const form = document.getElementById('ocForm');
+  form.reset();
+  document.getElementById('f_rowNumber').value = '';
+
+  if (rowNumber) {
+    const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    if (!oc) return;
+    document.getElementById('ocModalTitle').textContent = 'Editar Orden de Compra';
+    document.getElementById('f_rowNumber').value = oc.rowNumber;
+    document.getElementById('f_numero_oc').value = oc.numero_oc;
+    document.getElementById('f_codigo').value = oc.codigo;
+    document.getElementById('f_descripcion').value = oc.descripcion;
+    document.getElementById('f_cantidad_total').value = oc.cantidad_total;
+    document.getElementById('f_unidad').value = oc.unidad;
+    document.getElementById('f_fecha_inicio').value = oc.fecha_inicio;
+    document.getElementById('f_fecha_entrega').value = oc.fecha_entrega;
+    document.getElementById('f_estado').value = oc.estado;
+    document.getElementById('f_precio_unitario').value = oc.precio_unitario;
+    document.getElementById('f_email_proveedor').value = oc.email_proveedor;
+  } else {
+    document.getElementById('ocModalTitle').textContent = 'Nueva Orden de Compra';
+    document.getElementById('f_estado').value = 'Inicio';
+  }
+  document.getElementById('ocModalOverlay').classList.remove('hidden');
+}
+function closeOcModal() {
+  document.getElementById('ocModalOverlay').classList.add('hidden');
+}
+
+async function submitOcForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('f_rowNumber').value;
+  const payload = {
+    numero_oc: document.getElementById('f_numero_oc').value.trim(),
+    codigo: document.getElementById('f_codigo').value.trim(),
+    descripcion: document.getElementById('f_descripcion').value.trim(),
+    cantidad_total: document.getElementById('f_cantidad_total').value,
+    unidad: document.getElementById('f_unidad').value,
+    fecha_inicio: document.getElementById('f_fecha_inicio').value,
+    fecha_entrega: document.getElementById('f_fecha_entrega').value,
+    estado: document.getElementById('f_estado').value,
+    precio_unitario: document.getElementById('f_precio_unitario').value,
+    email_proveedor: document.getElementById('f_email_proveedor').value.trim().toLowerCase()
+  };
+
+  const btn = document.getElementById('ocModalSave');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  try {
+    let result;
+    if (rowNumber) {
+      result = await apiCall('updateOC', { ...payload, rowNumber });
+    } else {
+      result = await apiCall('createOC', payload);
     }
-
-    function aplicarFiltros() {
-      const term = document.getElementById('searchInput').value.toLowerCase();
-      let data = ocsData.filter(oc => {
-        const matchSearch = (oc.numero_oc && oc.numero_oc.toLowerCase().includes(term)) ||
-                           (oc.codigo && oc.codigo.toLowerCase().includes(term)) ||
-                           (oc.descripcion && oc.descripcion.toLowerCase().includes(term));
-        const matchEstado = filtroActual === 'Todos' || oc.estado === filtroActual;
-        return matchSearch && matchEstado;
-      });
-      renderTable(data);
-      updateDashboard(ocsData);
-      generarAlertas(ocsData);
+    if (result.success) {
+      closeOcModal();
+      loadOCs();
+    } else {
+      alert('No se pudo guardar: ' + (result.message || 'Error desconocido'));
     }
+  } catch (e) {
+    alert('Error de conexión al guardar la OC.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+  }
+}
 
-    function renderTable(data) {
-      const tbody = document.getElementById('ocTable');
-      if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="p-8 text-center text-gray-500">No hay OCs</td></tr>';
-        return;
-      }
-      
-      const hoy = new Date().toISOString().split('T')[0];
-      
-      tbody.innerHTML = data.map(oc => {
-        let estadoClass = `badge-${oc.estado.replace(' ', '-')}`;
-        let esRetrasada = oc.fecha_entrega && oc.fecha_entrega < hoy && oc.estado !== 'Terminado';
-        if (esRetrasada) estadoClass = 'badge-Retrasado';
-        
-        const acciones = currentUser.rol === 'Admin' ? `
-          <button onclick='editarOC(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-2 py-1 rounded text-xs mr-1"><i class="fas fa-edit"></i></button>
-          <button onclick='eliminarOC(${oc.rowNumber})' class="bg-red-100 hover:bg-red-200 text-red-700 px-2 py-1 rounded text-xs mr-1"><i class="fas fa-trash"></i></button>
-          <select onchange='cambiarEstado(${oc.rowNumber}, this.value)' class="text-xs border rounded p-1">
-            <option value="">Estado</option>
-            <option value="Inicio">Inicio</option>
-            <option value="En Producción">En Producción</option>
-            <option value="Por Entregar">Por Entregar</option>
-            <option value="Terminado">Terminado</option>
-          </select>
-        ` : `
-          <select onchange='cambiarEstado(${oc.rowNumber}, this.value)' class="text-xs border rounded p-1 mr-1">
-            <option value="${oc.estado || ''}">${oc.estado || 'Sin estado'}</option>
-            <option value="Inicio">Inicio</option>
-            <option value="En Producción">En Producción</option>
-            <option value="Por Entregar">Por Entregar</option>
-            <option value="Terminado">Terminado</option>
-          </select>
-          <button onclick='openDetailModal(${JSON.stringify(oc).replace(/'/g, "&#39;")})' class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded text-xs"><i class="fas fa-eye"></i></button>
-        `;
-        
-        return `
-          <tr class="hover:bg-gray-50 transition ${esRetrasada ? 'bg-red-50' : ''}">
-            <td class="p-4 font-bold text-blue-600">${oc.numero_oc}</td>
-            <td class="p-4 font-mono text-xs">${oc.codigo}</td>
-            <td class="p-4">${oc.descripcion}</td>
-            <td class="p-4 font-semibold">${oc.cantidad_total} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
-            <td class="p-4 font-semibold text-green-600">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
-            <td class="p-4 font-semibold text-green-600">${oc.stock_almacen || 0} <span class="text-gray-500 text-xs">${oc.unidad}</span></td>
-            <td class="p-4"><span class="px-2 py-1 rounded-full text-xs font-semibold ${estadoClass}">${oc.estado}</span></td>
-            <td class="p-4 text-sm ${esRetrasada ? 'text-red-600 font-bold' : 'text-gray-600'}">${formatDate(oc.fecha_entrega)} ${esRetrasada ? '<i class="fas fa-exclamation-triangle"></i>' : ''}</td>
-            <td class="p-4 no-print">${acciones}</td>
-          </tr>
-        `;
-      }).join('');
+async function eliminarOC(rowNumber) {
+  if (!confirm('¿Eliminar esta orden de compra? Esta acción no se puede deshacer.')) return;
+  try {
+    const result = await apiCall('deleteOC', { rowNumber });
+    if (result.success) {
+      loadOCs();
+    } else {
+      alert('No se pudo eliminar: ' + (result.message || ''));
     }
+  } catch (e) {
+    alert('Error de conexión al eliminar la OC.');
+  }
+}
 
-    function updateDashboard(data) {
-      document.getElementById('totalOCs').innerText = data.length;
-      const totalKg = data.filter(oc => oc.unidad === 'Kg').reduce((sum, oc) => sum + Number(oc.cantidad_total || 0), 0);
-      const totalMill = data.filter(oc => oc.unidad === 'Mill').reduce((sum, oc) => sum + Number(oc.cantidad_total || 0), 0);
-      document.getElementById('totalKg').innerText = totalKg.toLocaleString();
-      document.getElementById('totalMill').innerText = totalMill.toLocaleString();
-      
-      const hoy = new Date().toISOString().split('T')[0];
-      const retrasadas = data.filter(oc => oc.fecha_entrega && oc.fecha_entrega < hoy && oc.estado !== 'Terminado').length;
-      document.getElementById('totalRetrasadas').innerText = retrasadas;
+/* ---------------- Modal Detalle (Proveedor) ---------------- */
+function openDetalleModal(rowNumber) {
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  if (!oc) return;
+
+  document.getElementById('e_rowNumber').value = oc.rowNumber;
+  document.getElementById('e_fecha').value = '';
+  document.getElementById('e_cantidad').value = '';
+
+  document.getElementById('detalleInfo').innerHTML = `
+    <div><div class="k">N° OC</div><div class="v mono">${oc.numero_oc}</div></div>
+    <div><div class="k">Código</div><div class="v">${oc.codigo}</div></div>
+    <div><div class="k">Descripción</div><div class="v">${oc.descripcion}</div></div>
+    <div><div class="k">Cantidad total</div><div class="v mono">${Number(oc.cantidad_total||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
+    <div><div class="k">Stock en almacén</div><div class="v mono">${Number(oc.stock_almacen||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
+    <div><div class="k">Fecha de entrega</div><div class="v mono">${oc.fecha_entrega}</div></div>
+    <div><div class="k">Estado</div><div class="v">${oc.estado}</div></div>
+    <div><div class="k">Precio unitario</div><div class="v mono">$${Number(oc.precio_unitario||0).toFixed(2)}</div></div>
+  `;
+
+  const list = document.getElementById('entregasList');
+  const emptyMsg = document.getElementById('entregasEmpty');
+  const entregas = (oc.detalle_entregas || '').split('|').map(s => s.trim()).filter(Boolean);
+  if (entregas.length === 0) {
+    list.classList.add('hidden');
+    emptyMsg.classList.remove('hidden');
+    list.innerHTML = '';
+  } else {
+    emptyMsg.classList.add('hidden');
+    list.classList.remove('hidden');
+    list.innerHTML = entregas.map(e => {
+      const parts = e.split(':');
+      const fecha = (parts[0] || '').trim();
+      const cant = (parts.slice(1).join(':') || '').trim();
+      return `<li><span>${fecha}</span><span>${cant}</span></li>`;
+    }).join('');
+  }
+
+  document.getElementById('detalleModalOverlay').classList.remove('hidden');
+}
+function closeDetalleModal() {
+  document.getElementById('detalleModalOverlay').classList.add('hidden');
+}
+
+async function submitEntregaForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('e_rowNumber').value;
+  const fecha = document.getElementById('e_fecha').value;
+  const cantidad = document.getElementById('e_cantidad').value;
+
+  const btn = document.getElementById('btnRegistrarEntrega');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  try {
+    const result = await apiCall('registrarEntrega', { rowNumber, fecha, cantidad });
+    if (result.success) {
+      closeDetalleModal();
+      loadOCs();
+    } else {
+      alert('No se pudo registrar la entrega: ' + (result.message || ''));
     }
+  } catch (e) {
+    alert('Error de conexión al registrar la entrega.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Registrar entrega';
+  }
+}
 
-    function generarAlertas(data) {
-      const hoy = new Date().toISOString().split('T')[0];
-      const retrasadas = data.filter(oc => oc.fecha_entrega && oc.fecha_entrega < hoy && oc.estado !== 'Terminado');
-      const container = document.getElementById('alertasRetraso');
-      
-      if (retrasadas.length > 0) {
-        container.innerHTML = `
-          <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-            <div class="flex items-start">
-              <i class="fas fa-exclamation-triangle text-red-500 text-xl mr-3 mt-1"></i>
-              <div class="flex-1">
-                <h4 class="font-bold text-red-800">⚠️ ${retrasadas.length} OC(s) con retraso</h4>
-                <ul class="text-sm text-red-700 mt-1">
-                  ${retrasadas.map(oc => `<li>• <strong>${oc.numero_oc}</strong> - ${oc.descripcion} (Vencía: ${formatDate(oc.fecha_entrega)})</li>`).join('')}
-                </ul>
-              </div>
-            </div>
-          </div>
-        `;
-      } else {
-        container.innerHTML = '';
-      }
-    }
-
-    function filtrarEstado(estado) {
-      filtroActual = estado;
-      aplicarFiltros();
-    }
-
-    document.getElementById('searchInput').addEventListener('input', aplicarFiltros);
-
-    function formatDate(d) {
-      if (!d) return '-';
-      if (typeof d === 'string' && d.includes('T')) return d.split('T')[0];
-      return d;
-    }
-
-    function openDetailModal(oc) {
-      document.getElementById('detailModal').classList.remove('hidden');
-      document.getElementById('modalRowNumber').value = oc.rowNumber;
-      document.getElementById('modalNumeroOC').innerText = oc.numero_oc;
-      document.getElementById('modalProducto').innerText = `${oc.codigo} - ${oc.descripcion}`;
-      document.getElementById('modalCantidad').innerText = `${oc.cantidad_total} ${oc.unidad}`;
-      document.getElementById('modalStock').innerText = `${oc.stock_almacen || 0} ${oc.unidad}`;
-      document.getElementById('modalPrecio').innerText = `$${Number(oc.precio_unitario || 0).toFixed(2)}`;
-      document.getElementById('modalFecha').innerText = formatDate(oc.fecha_entrega);
-      document.getElementById('modalEstado').innerText = oc.estado;
-      document.getElementById('modalUnidad').value = oc.unidad;
-      document.getElementById('nuevaFecha').value = new Date().toISOString().split('T')[0];
-      
-      const historialDiv = document.getElementById('modalHistorial');
-      if (oc.detalle_entregas) {
-        const entregas = oc.detalle_entregas.split('|').map(e => e.trim());
-        historialDiv.innerHTML = entregas.map(e => `<div class="flex items-center mb-1"><i class="fas fa-check-circle text-green-500 mr-2"></i> ${e}</div>`).join('');
-      } else {
-        historialDiv.innerHTML = '<p class="text-gray-500 italic">Sin entregas registradas.</p>';
-      }
-    }
-
-    function closeModal() {
-      document.getElementById('detailModal').classList.add('hidden');
-    }
-
-    document.getElementById('entregaForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const btn = e.target.querySelector('button[type="submit"]');
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-      btn.disabled = true;
-
-      const formData = new FormData();
-      formData.append('action', 'updateEntrega');
-      formData.append('rowNumber', document.getElementById('modalRowNumber').value);
-      formData.append('fecha', document.getElementById('nuevaFecha').value);
-      formData.append('cantidad', document.getElementById('nuevaCantidad').value);
-      formData.append('unidad', document.getElementById('modalUnidad').value);
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: formData,
-          redirect: 'follow'
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-          alert('¡Entrega registrada! Stock actualizado.');
-          closeModal();
-          loadOCs();
-        } else {
-          alert('Error: ' + (result.error || 'No se pudo guardar'));
-        }
-      } catch (error) {
-        console.error(error);
-        alert('Error al guardar.');
-      } finally {
-        btn.innerHTML = 'Guardar Entrega';
-        btn.disabled = false;
-      }
-    });
-
-    function openAdminModal() {
-      document.getElementById('adminModal').classList.remove('hidden');
-      document.getElementById('adminForm').reset();
-      document.getElementById('adminRowNumber').value = '';
-      document.getElementById('adminSubmitBtn').innerText = 'Crear Nueva OC';
-    }
-
-    function closeAdminModal() {
-      document.getElementById('adminModal').classList.add('hidden');
-    }
-
-    function editarOC(oc) {
-      document.getElementById('adminModal').classList.remove('hidden');
-      document.getElementById('adminRowNumber').value = oc.rowNumber;
-      document.getElementById('adminNumeroOC').value = oc.numero_oc;
-      document.getElementById('adminCodigo').value = oc.codigo;
-      document.getElementById('adminDescripcion').value = oc.descripcion;
-      document.getElementById('adminCantidad').value = oc.cantidad_total;
-      document.getElementById('adminUnidad').value = oc.unidad;
-      document.getElementById('adminPrecio').value = oc.precio_unitario || 0;
-      document.getElementById('adminFechaInicio').value = formatDate(oc.fecha_inicio);
-      document.getElementById('adminFechaEntrega').value = formatDate(oc.fecha_entrega);
-      document.getElementById('adminEstado').value = oc.estado;
-      document.getElementById('adminProveedor').value = oc.email_proveedor;
-      document.getElementById('adminSubmitBtn').innerText = 'Actualizar OC';
-    }
-
-    document.getElementById('adminForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const rowNumber = document.getElementById('adminRowNumber').value;
-      
-      const formData = new FormData();
-      formData.append('action', rowNumber ? 'editOC' : 'addOC');
-      formData.append('numero_oc', document.getElementById('adminNumeroOC').value);
-      formData.append('codigo', document.getElementById('adminCodigo').value);
-      formData.append('descripcion', document.getElementById('adminDescripcion').value);
-      formData.append('cantidad_total', document.getElementById('adminCantidad').value);
-      formData.append('unidad', document.getElementById('adminUnidad').value);
-      formData.append('precio_unitario', document.getElementById('adminPrecio').value);
-      formData.append('fecha_inicio', document.getElementById('adminFechaInicio').value);
-      formData.append('fecha_entrega', document.getElementById('adminFechaEntrega').value);
-      formData.append('estado', document.getElementById('adminEstado').value);
-      formData.append('email_proveedor', document.getElementById('adminProveedor').value);
-      if (rowNumber) formData.append('rowNumber', rowNumber);
-
-      try {
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: formData,
-          redirect: 'follow'
-        });
-        const result = await response.json();
-        
-        if (result.success) {
-          alert(rowNumber ? '✅ OC actualizada' : '✅ OC creada');
-          closeAdminModal();
-          loadOCs();
-        } else {
-          alert('Error: ' + (result.error || 'No se pudo guardar'));
-        }
-      } catch (error) {
-        console.error(error);
-        alert('Error al guardar.');
-      }
-    });
-
-    async function eliminarOC(rowNumber) {
-      if (!confirm('¿Seguro que deseas eliminar esta OC?')) return;
-      try {
-        const formData = new FormData();
-        formData.append('action', 'deleteOC');
-        formData.append('rowNumber', String(rowNumber));
-        
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: formData,
-          redirect: 'follow'
-        });
-        alert('OC eliminada');
-        loadOCs();
-      } catch (error) {
-        alert('Error al eliminar.');
-      }
-    }
-
-    async function cambiarEstado(rowNumber, estado) {
-      if (!estado) return;
-      
-      try {
-        const formData = new FormData();
-        formData.append('action', 'updateEstado');
-        formData.append('rowNumber', String(rowNumber));
-        formData.append('estado', estado);
-        
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: formData,
-          redirect: 'follow'
-        });
-        
-        const result = await response.json();
-        console.log('Resultado:', result);
-        
-        if (result.success) {
-          alert('✅ Estado actualizado a: ' + estado);
-          loadOCs();
-        } else {
-          alert('❌ Error: ' + (result.error || 'No se pudo actualizar'));
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error de conexión al cambiar estado');
-      }
-    }
-
-    function exportExcel() {
-      const data = ocsData.map(oc => ({
-        'Nº OC': oc.numero_oc,
-        'Código': oc.codigo,
-        'Descripción': oc.descripcion,
-        'Cantidad Total': oc.cantidad_total,
-        'Unidad': oc.unidad,
-        'Precio Unitario': oc.precio_unitario || 0,
-        'Stock Almacén': oc.stock_almacen || 0,
-        'Estado': oc.estado,
-        'F. Inicio': formatDate(oc.fecha_inicio),
-        'F. Entrega': formatDate(oc.fecha_entrega),
-        'Detalle Entregas': oc.detalle_entregas || ''
-      }));
-      
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'OCs');
-      XLSX.writeFile(wb, `OCs_${currentUser.nombre}_${new Date().toISOString().split('T')[0]}.xlsx`);
-    }
-
-    function logout() {
-      localStorage.removeItem('currentUser');
-      currentUser = null;
-      document.getElementById('mainScreen').classList.add('hidden');
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('loginForm').reset();
-    }
-
-    window.addEventListener('load', function() {
-      const saved = localStorage.getItem('currentUser');
-      if (saved) {
-        currentUser = JSON.parse(saved);
-        showMainScreen();
-      }
-    });
-  </script>
+/* ---------------- Exportar Excel ---------------- */
+function exportExcel() {
+  const filtered = getFilteredOcs();
+  if (filtered.length === 0) {
+    alert('No hay datos para exportar con el filtro actual.');
+    return;
+  }
+  const rows = filtered.map(oc => ({
+    'N° OC': oc.numero_oc,
+    'Código': oc.codigo,
+    'Descripción': oc.descripcion,
+    'Cantidad total': oc.cantidad_total,
+    'Unidad': oc.unidad,
+    'Fecha inicio': oc.fecha_inicio,
+    'Fecha entrega': oc.fecha_entrega,
+    'Estado': oc.estado,
+    'Stock almacén': oc.stock_almacen,
+    'Precio unitario (USD)': oc.precio_unitario,
+    'Proveedor': oc.email_proveedor,
+    'Retrasado': isRetrasado(oc) ? 'Sí' : 'No'
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'OCs');
+  const fecha = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `OCs_${fecha}.xlsx`);
+}
+</script>
 </body>
 </html>
