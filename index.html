@@ -181,7 +181,7 @@
     </div>
   </div>
 
-  <!-- MODAL ADMIN (CRUD) -->
+  <!-- MODAL ADMIN -->
   <div id="adminModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 no-print p-4">
     <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
       <div class="p-6 border-b bg-purple-50 flex justify-between items-center">
@@ -249,7 +249,8 @@
   </div>
 
   <script>
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxGrjwTMaD4SHPnuBDDK_ZJfhLKXPCZN76KpWqWXxMdg9BYytc1sciWvB46zK6WdikS6Q/exec';
+    // ⚠️ REEMPLAZA ESTA URL CON LA TUYA
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzS0XphX1RR2Ey9_boQzir6OFWK77wT78YPkgHnGIgeE2YWZLRS73EXdwJrO0ogl0hJUg/exec';
     let currentUser = null;
     let ocsData = [];
     let filtroActual = 'Todos';
@@ -290,8 +291,8 @@
     function showMainScreen() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('mainScreen').classList.remove('hidden');
-      document.getElementById('userName').innerText = `👤 ${currentUser.nombre}`;
-      document.getElementById('userRole').innerText = currentUser.rol === 'Admin' ? ' Modo Administrador' : '📦 Portal de Proveedor';
+      document.getElementById('userName').innerText = ` ${currentUser.nombre}`;
+      document.getElementById('userRole').innerText = currentUser.rol === 'Admin' ? '🔧 Modo Administrador' : ' Portal de Proveedor';
       
       if (currentUser.rol === 'Admin') {
         document.getElementById('btnAdmin').classList.remove('hidden');
@@ -457,20 +458,30 @@
       btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
       btn.disabled = true;
 
-      const data = {
-        action: 'updateEntrega',
-        rowNumber: document.getElementById('modalRowNumber').value,
-        fecha: document.getElementById('nuevaFecha').value,
-        cantidad: document.getElementById('nuevaCantidad').value,
-        unidad: document.getElementById('modalUnidad').value
-      };
+      const formData = new FormData();
+      formData.append('action', 'updateEntrega');
+      formData.append('rowNumber', document.getElementById('modalRowNumber').value);
+      formData.append('fecha', document.getElementById('nuevaFecha').value);
+      formData.append('cantidad', document.getElementById('nuevaCantidad').value);
+      formData.append('unidad', document.getElementById('modalUnidad').value);
 
       try {
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), redirect: 'follow' });
-        alert('¡Entrega registrada! Stock actualizado.');
-        closeModal();
-        loadOCs();
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData,
+          redirect: 'follow'
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          alert('¡Entrega registrada! Stock actualizado.');
+          closeModal();
+          loadOCs();
+        } else {
+          alert('Error: ' + (result.error || 'No se pudo guardar'));
+        }
       } catch (error) {
+        console.error(error);
         alert('Error al guardar.');
       } finally {
         btn.innerHTML = 'Guardar Entrega';
@@ -478,7 +489,6 @@
       }
     });
 
-    // FUNCIONES ADMIN
     function openAdminModal() {
       document.getElementById('adminModal').classList.remove('hidden');
       document.getElementById('adminForm').reset();
@@ -509,31 +519,38 @@
     document.getElementById('adminForm').addEventListener('submit', async function(e) {
       e.preventDefault();
       const rowNumber = document.getElementById('adminRowNumber').value;
-      const data = {
-        numero_oc: document.getElementById('adminNumeroOC').value,
-        codigo: document.getElementById('adminCodigo').value,
-        descripcion: document.getElementById('adminDescripcion').value,
-        cantidad_total: document.getElementById('adminCantidad').value,
-        unidad: document.getElementById('adminUnidad').value,
-        precio_unitario: document.getElementById('adminPrecio').value,
-        fecha_inicio: document.getElementById('adminFechaInicio').value,
-        fecha_entrega: document.getElementById('adminFechaEntrega').value,
-        estado: document.getElementById('adminEstado').value,
-        email_proveedor: document.getElementById('adminProveedor').value
-      };
+      
+      const formData = new FormData();
+      formData.append('action', rowNumber ? 'editOC' : 'addOC');
+      formData.append('numero_oc', document.getElementById('adminNumeroOC').value);
+      formData.append('codigo', document.getElementById('adminCodigo').value);
+      formData.append('descripcion', document.getElementById('adminDescripcion').value);
+      formData.append('cantidad_total', document.getElementById('adminCantidad').value);
+      formData.append('unidad', document.getElementById('adminUnidad').value);
+      formData.append('precio_unitario', document.getElementById('adminPrecio').value);
+      formData.append('fecha_inicio', document.getElementById('adminFechaInicio').value);
+      formData.append('fecha_entrega', document.getElementById('adminFechaEntrega').value);
+      formData.append('estado', document.getElementById('adminEstado').value);
+      formData.append('email_proveedor', document.getElementById('adminProveedor').value);
+      if (rowNumber) formData.append('rowNumber', rowNumber);
 
       try {
-        if (rowNumber) {
-          data.action = 'editOC';
-          data.rowNumber = rowNumber;
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData,
+          redirect: 'follow'
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+          alert(rowNumber ? '✅ OC actualizada' : '✅ OC creada');
+          closeAdminModal();
+          loadOCs();
         } else {
-          data.action = 'addOC';
+          alert('Error: ' + (result.error || 'No se pudo guardar'));
         }
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(data), redirect: 'follow' });
-        alert(rowNumber ? 'OC actualizada' : 'OC creada');
-        closeAdminModal();
-        loadOCs();
       } catch (error) {
+        console.error(error);
         alert('Error al guardar.');
       }
     });
@@ -541,7 +558,15 @@
     async function eliminarOC(rowNumber) {
       if (!confirm('¿Seguro que deseas eliminar esta OC?')) return;
       try {
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'deleteOC', rowNumber: rowNumber }), redirect: 'follow' });
+        const formData = new FormData();
+        formData.append('action', 'deleteOC');
+        formData.append('rowNumber', String(rowNumber));
+        
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData,
+          redirect: 'follow'
+        });
         alert('OC eliminada');
         loadOCs();
       } catch (error) {
@@ -551,16 +576,34 @@
 
     async function cambiarEstado(rowNumber, estado) {
       if (!estado) return;
+      
       try {
-        await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'updateEstado', rowNumber: rowNumber, estado: estado }), redirect: 'follow' });
-        alert('Estado actualizado');
-        loadOCs();
+        const formData = new FormData();
+        formData.append('action', 'updateEstado');
+        formData.append('rowNumber', String(rowNumber));
+        formData.append('estado', estado);
+        
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData,
+          redirect: 'follow'
+        });
+        
+        const result = await response.json();
+        console.log('Resultado:', result);
+        
+        if (result.success) {
+          alert('✅ Estado actualizado a: ' + estado);
+          loadOCs();
+        } else {
+          alert('❌ Error: ' + (result.error || 'No se pudo actualizar'));
+        }
       } catch (error) {
-        alert('Error al cambiar estado.');
+        console.error('Error:', error);
+        alert('Error de conexión al cambiar estado');
       }
     }
 
-    // EXPORTAR A EXCEL
     function exportExcel() {
       const data = ocsData.map(oc => ({
         'Nº OC': oc.numero_oc,
