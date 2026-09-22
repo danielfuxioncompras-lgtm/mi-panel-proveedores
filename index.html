@@ -303,6 +303,9 @@
     font-size:11.5px;
     white-space:nowrap;
   }
+  thead th.th-sortable{cursor:pointer;user-select:none;}
+  thead th.th-sortable:hover{color:var(--accent);}
+  thead th.th-active{color:var(--accent);}
   tbody td{
     padding:10px 12px;
     border-bottom:1px solid var(--border);
@@ -399,6 +402,30 @@
   .entregas-empty{padding:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;border:1px dashed var(--border);margin-bottom:18px;}
   h3.subhead{font-size:12.5px;text-transform:none;color:var(--ink-soft);font-weight:600;margin:0 0 10px;}
 
+  /* ---------- Dashboard admin ---------- */
+  .modal-wide{max-width:780px;}
+  .dash-summary{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:10px;
+    margin-bottom:24px;
+  }
+  .dash-stat{background:var(--neutral-bg);padding:12px 13px;border:1px solid var(--border);}
+  .dash-stat .k{font-size:10.5px;color:var(--ink-soft);margin-bottom:5px;}
+  .dash-stat .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:17px;color:var(--primary);}
+  .dash-stat-danger{background:var(--danger-bg);}
+  .dash-stat-danger .v{color:var(--danger);}
+  .dash-bars{margin-bottom:26px;}
+  .dash-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;}
+  .dash-bar-label{width:112px;flex-shrink:0;color:var(--ink-soft);font-weight:500;}
+  .dash-bar-track{flex:1;height:10px;background:var(--border);position:relative;overflow:hidden;}
+  .dash-bar-fill{height:100%;transition:width .3s ease;}
+  .dash-neutral{background:var(--neutral);}
+  .dash-warning{background:var(--warning);}
+  .dash-info{background:var(--info);}
+  .dash-success{background:var(--success);}
+  .dash-bar-count{width:26px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--ink);}
+  .dash-table-wrap{box-shadow:none;}
+  .dash-table-wrap table{min-width:0;}
+
   /* ---------- Print ---------- */
   @media print{
     header.app-header, .toolbar, .cards, .row-actions-col, .no-print{display:none !important;}
@@ -412,6 +439,8 @@
     .cards{grid-template-columns:repeat(2,1fr);}
     .toolbar-actions{margin-left:0;width:100%;}
     .grid-2{grid-template-columns:1fr;}
+    .dash-summary{grid-template-columns:repeat(2,1fr);}
+    .dash-bar-label{width:88px;}
   }
 </style>
 </head>
@@ -490,6 +519,7 @@
         <button class="btn btn-outline" id="btnRefresh" title="Traer los últimos cambios del servidor">↻ Actualizar</button>
         <button class="btn btn-outline" id="btnExport">Exportar Excel</button>
         <button class="btn btn-outline" id="btnPrint">Imprimir / PDF</button>
+        <button class="btn btn-outline hidden" id="btnDashboard">📊 Dashboard</button>
         <button class="btn btn-accent hidden" id="btnNuevaOC">+ Nueva OC</button>
       </div>
     </div>
@@ -612,13 +642,24 @@
   </div>
 </div>
 
+<!-- ============ MODAL: Dashboard general (Admin) ============ -->
+<div class="modal-overlay hidden" id="dashboardModalOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>Dashboard general</h2>
+      <button class="modal-close" id="dashboardModalClose">✕</button>
+    </div>
+    <div class="modal-body" id="dashboardBody"></div>
+  </div>
+</div>
+
 <script>
 /* =========================================================
    CONFIGURACIÓN
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygyhTk0jk0iRphveeWtT3adaXgPSii8YuA5PMVLME7na90HadQinhb76ZsHs36ofx_Pw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0wxl3Va843gVbG4f9SQoPvEtmVa6wHCIIL8VjpUhOmUQtKdaqFmVGF_utfn2JVbrQxQ/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -702,6 +743,7 @@ function enterApp() {
   document.getElementById('userRol').textContent = currentUser.rol;
   if (currentUser.rol === 'Admin') {
     document.getElementById('btnNuevaOC').classList.remove('hidden');
+    document.getElementById('btnDashboard').classList.remove('hidden');
   }
   renderTableHead();
   loadOCs();
@@ -710,7 +752,8 @@ function enterApp() {
 
 function isAnyModalOpen() {
   return !document.getElementById('ocModalOverlay').classList.contains('hidden') ||
-         !document.getElementById('detalleModalOverlay').classList.contains('hidden');
+         !document.getElementById('detalleModalOverlay').classList.contains('hidden') ||
+         !document.getElementById('dashboardModalOverlay').classList.contains('hidden');
 }
 
 function startBackgroundSync() {
@@ -719,7 +762,7 @@ function startBackgroundSync() {
   setInterval(() => {
     if (isAnyModalOpen()) return;
     if (document.activeElement === document.getElementById('searchInput')) return;
-    loadOCs();
+    loadOCs(true);
   }, 90000);
 }
 
@@ -753,6 +796,20 @@ function bindEvents() {
   document.getElementById('btnPrint').addEventListener('click', () => window.print());
   document.getElementById('btnRefresh').addEventListener('click', () => loadOCs());
 
+  document.getElementById('tableHeadRow').addEventListener('click', (e) => {
+    const th = e.target.closest('.th-sortable');
+    if (!th) return;
+    const key = th.dataset.key;
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortKey = key;
+      sortDir = 'asc';
+    }
+    renderTableHead();
+    renderTable();
+  });
+
   document.getElementById('btnNuevaOC').addEventListener('click', () => openOcModal(null));
   document.getElementById('ocModalClose').addEventListener('click', closeOcModal);
   document.getElementById('ocModalCancel').addEventListener('click', closeOcModal);
@@ -760,21 +817,28 @@ function bindEvents() {
 
   document.getElementById('detalleModalClose').addEventListener('click', closeDetalleModal);
   document.getElementById('entregaForm').addEventListener('submit', submitEntregaForm);
+
+  document.getElementById('btnDashboard').addEventListener('click', openDashboardModal);
+  document.getElementById('dashboardModalClose').addEventListener('click', closeDashboardModal);
 }
 
 /* ---------------- Carga de datos ---------------- */
-async function loadOCs() {
+async function loadOCs(silent = false) {
   try {
     const result = await apiCall('getOCs', { email: currentUser.email, rol: currentUser.rol });
     if (result.success) {
       allOcs = result.ocs || [];
       renderCards();
       renderTable();
-    } else {
+    } else if (!silent) {
       alert('No se pudieron cargar las OCs: ' + (result.message || ''));
     }
   } catch (e) {
-    alert('Error de conexión al cargar las OCs.');
+    if (!silent) {
+      alert('Error de conexión al cargar las OCs.');
+    } else {
+      console.warn('Sincronización silenciosa falló:', e);
+    }
   }
 }
 
@@ -800,21 +864,43 @@ function renderCards() {
 }
 
 /* ---------------- Tabla ---------------- */
-function renderTableHead() {
+let sortKey = null;
+let sortDir = 'asc'; // 'asc' | 'desc'
+
+function getColumnDefs() {
   const isAdmin = currentUser.rol === 'Admin';
-  const cols = ['N° OC', 'Código', 'Descripción', 'Cantidad'];
-  if (!isAdmin) cols.push('Fecha inicio');
-  cols.push('Fecha entrega', 'Estado', 'Stock almacén');
+  const cols = [
+    { label: 'N° OC', key: 'numero_oc', type: 'num' },
+    { label: 'Código', key: 'codigo', type: 'str' },
+    { label: 'Descripción', key: 'descripcion', type: 'str' },
+    { label: 'Cantidad', key: 'cantidad_total', type: 'num' }
+  ];
+  if (!isAdmin) cols.push({ label: 'Fecha inicio', key: 'fecha_inicio', type: 'str' });
+  cols.push({ label: 'Fecha entrega', key: 'fecha_entrega', type: 'str' });
+  cols.push({ label: 'Estado', key: 'estado', type: 'str' });
+  cols.push({ label: 'Stock almacén', key: 'stock_almacen', type: 'num' });
   if (isAdmin) {
-    cols.push('Proveedor', 'Acciones');
+    cols.push({ label: 'Proveedor', key: 'email_proveedor', type: 'str' });
+    cols.push({ label: 'Acciones', key: null, type: null });
   } else {
-    cols.push('Precio unit. (USD)', 'Detalle');
+    cols.push({ label: 'Precio unit. (USD)', key: 'precio_unitario', type: 'num' });
+    cols.push({ label: 'Detalle', key: null, type: null });
   }
-  document.getElementById('tableHeadRow').innerHTML = cols.map(c => `<th>${c}</th>`).join('');
+  return cols;
+}
+
+function renderTableHead() {
+  const cols = getColumnDefs();
+  document.getElementById('tableHeadRow').innerHTML = cols.map(c => {
+    if (!c.key) return `<th>${c.label}</th>`;
+    const active = sortKey === c.key;
+    const arrow = active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+    return `<th class="th-sortable ${active ? 'th-active' : ''}" data-key="${c.key}" data-type="${c.type}">${c.label}${arrow}</th>`;
+  }).join('');
 }
 
 function getFilteredOcs() {
-  return allOcs.filter(oc => {
+  let filtered = allOcs.filter(oc => {
     if (currentFilter !== 'Todos' && oc.estado !== currentFilter) return false;
     if (searchTerm) {
       const hay = (String(oc.numero_oc) + ' ' + oc.codigo + ' ' + oc.descripcion).toLowerCase();
@@ -822,6 +908,25 @@ function getFilteredOcs() {
     }
     return true;
   });
+
+  if (sortKey) {
+    const col = getColumnDefs().find(c => c.key === sortKey);
+    const type = col ? col.type : 'str';
+    filtered = filtered.slice().sort((a, b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (type === 'num') {
+        av = Number(av) || 0; bv = Number(bv) || 0;
+        return sortDir === 'asc' ? av - bv : bv - av;
+      }
+      av = String(av || '').toLowerCase();
+      bv = String(bv || '').toLowerCase();
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  return filtered;
 }
 
 function renderTable() {
@@ -1094,6 +1199,98 @@ async function submitEntregaForm(ev) {
     btn.disabled = false;
     btn.textContent = 'Registrar entrega';
   }
+}
+
+/* ---------------- Dashboard general (Admin) ---------------- */
+function computeDashboardStats() {
+  const totalOCs = allOcs.length;
+  const totalKg = allOcs.filter(o => o.unidad === 'Kg').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const totalMill = allOcs.filter(o => o.unidad === 'Mill').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const valorTotal = allOcs.reduce((s, o) => s + Number(o.cantidad_total || 0) * Number(o.precio_unitario || 0), 0);
+  const retrasadas = allOcs.filter(isRetrasado).length;
+
+  const porEstado = ESTADOS.map(es => ({
+    estado: es,
+    count: allOcs.filter(o => o.estado === es).length
+  }));
+
+  const proveedoresMap = {};
+  allOcs.forEach(o => {
+    const key = o.email_proveedor || '(sin proveedor)';
+    if (!proveedoresMap[key]) proveedoresMap[key] = { email: key, count: 0, kg: 0, mill: 0, valor: 0, retrasadas: 0 };
+    const p = proveedoresMap[key];
+    p.count++;
+    if (o.unidad === 'Kg') p.kg += Number(o.cantidad_total || 0);
+    if (o.unidad === 'Mill') p.mill += Number(o.cantidad_total || 0);
+    p.valor += Number(o.cantidad_total || 0) * Number(o.precio_unitario || 0);
+    if (isRetrasado(o)) p.retrasadas++;
+  });
+  const porProveedor = Object.values(proveedoresMap).sort((a, b) => b.valor - a.valor);
+
+  return { totalOCs, totalKg, totalMill, valorTotal, retrasadas, porEstado, porProveedor };
+}
+
+const DASH_ESTADO_CLASS = {
+  'Inicio': 'dash-neutral',
+  'En Producción': 'dash-warning',
+  'Por Entregar': 'dash-info',
+  'Terminado': 'dash-success'
+};
+
+function renderDashboardBody() {
+  const s = computeDashboardStats();
+  const maxEstadoCount = Math.max(1, ...s.porEstado.map(e => e.count));
+
+  const resumenHtml = `
+    <div class="dash-summary">
+      <div class="dash-stat"><div class="k">Total OCs</div><div class="v">${s.totalOCs}</div></div>
+      <div class="dash-stat"><div class="k">Valor total (USD)</div><div class="v">$${s.valorTotal.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</div></div>
+      <div class="dash-stat"><div class="k">Total Kg</div><div class="v">${s.totalKg.toLocaleString('es-PE')}</div></div>
+      <div class="dash-stat"><div class="k">Total Millares</div><div class="v">${s.totalMill.toLocaleString('es-PE')}</div></div>
+      <div class="dash-stat dash-stat-danger"><div class="k">Retrasadas</div><div class="v">${s.retrasadas}</div></div>
+    </div>`;
+
+  const estadoHtml = `
+    <h3 class="subhead">OCs por estado</h3>
+    <div class="dash-bars">
+      ${s.porEstado.map(e => `
+        <div class="dash-bar-row">
+          <span class="dash-bar-label">${e.estado}</span>
+          <div class="dash-bar-track"><div class="dash-bar-fill ${DASH_ESTADO_CLASS[e.estado]}" style="width:${(e.count / maxEstadoCount * 100).toFixed(0)}%"></div></div>
+          <span class="dash-bar-count">${e.count}</span>
+        </div>`).join('')}
+    </div>`;
+
+  const proveedorHtml = s.porProveedor.length === 0 ? '' : `
+    <h3 class="subhead">Por proveedor</h3>
+    <div class="table-wrap dash-table-wrap">
+      <table>
+        <thead><tr>
+          <th>Proveedor</th><th>OCs</th><th>Kg</th><th>Mill</th><th>Valor (USD)</th><th>Retrasadas</th>
+        </tr></thead>
+        <tbody>
+          ${s.porProveedor.map(p => `
+            <tr class="${p.retrasadas > 0 ? 'retrasado' : ''}">
+              <td>${p.email}</td>
+              <td class="mono">${p.count}</td>
+              <td class="mono">${p.kg.toLocaleString('es-PE')}</td>
+              <td class="mono">${p.mill.toLocaleString('es-PE')}</td>
+              <td class="mono">$${p.valor.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+              <td class="mono">${p.retrasadas}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('dashboardBody').innerHTML = resumenHtml + estadoHtml + proveedorHtml;
+}
+
+function openDashboardModal() {
+  renderDashboardBody();
+  document.getElementById('dashboardModalOverlay').classList.remove('hidden');
+}
+function closeDashboardModal() {
+  document.getElementById('dashboardModalOverlay').classList.add('hidden');
 }
 
 /* ---------------- Exportar Excel ---------------- */
