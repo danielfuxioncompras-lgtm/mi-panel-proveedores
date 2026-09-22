@@ -487,6 +487,7 @@
         <button class="chip" data-estado="Terminado">Terminado</button>
       </div>
       <div class="toolbar-actions no-print">
+        <button class="btn btn-outline" id="btnRefresh" title="Traer los últimos cambios del servidor">↻ Actualizar</button>
         <button class="btn btn-outline" id="btnExport">Exportar Excel</button>
         <button class="btn btn-outline" id="btnPrint">Imprimir / PDF</button>
         <button class="btn btn-accent hidden" id="btnNuevaOC">+ Nueva OC</button>
@@ -617,7 +618,7 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaIX3_Sbf42Iz80RaHN0GeggePzdcW0f1Bw8Pdiah-EdcoxsW0B34AWgSx-vc8Fb9Mug/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygyhTk0jk0iRphveeWtT3adaXgPSii8YuA5PMVLME7na90HadQinhb76ZsHs36ofx_Pw/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -704,6 +705,22 @@ function enterApp() {
   }
   renderTableHead();
   loadOCs();
+  startBackgroundSync();
+}
+
+function isAnyModalOpen() {
+  return !document.getElementById('ocModalOverlay').classList.contains('hidden') ||
+         !document.getElementById('detalleModalOverlay').classList.contains('hidden');
+}
+
+function startBackgroundSync() {
+  // Trae cambios de otros usuarios (proveedores/admin) sin que el usuario tenga que hacer nada.
+  // No interrumpe si hay un modal abierto o si está escribiendo en el buscador.
+  setInterval(() => {
+    if (isAnyModalOpen()) return;
+    if (document.activeElement === document.getElementById('searchInput')) return;
+    loadOCs();
+  }, 90000);
 }
 
 function bindEvents() {
@@ -713,9 +730,14 @@ function bindEvents() {
     location.reload();
   });
 
+  let searchDebounceTimer = null;
   document.getElementById('searchInput').addEventListener('input', (e) => {
-    searchTerm = e.target.value.trim().toLowerCase();
-    renderTable();
+    const val = e.target.value;
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      searchTerm = val.trim().toLowerCase();
+      renderTable();
+    }, 120);
   });
 
   document.getElementById('filterChips').addEventListener('click', (e) => {
@@ -729,6 +751,7 @@ function bindEvents() {
 
   document.getElementById('btnExport').addEventListener('click', exportExcel);
   document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  document.getElementById('btnRefresh').addEventListener('click', () => loadOCs());
 
   document.getElementById('btnNuevaOC').addEventListener('click', () => openOcModal(null));
   document.getElementById('ocModalClose').addEventListener('click', closeOcModal);
@@ -779,7 +802,9 @@ function renderCards() {
 /* ---------------- Tabla ---------------- */
 function renderTableHead() {
   const isAdmin = currentUser.rol === 'Admin';
-  const cols = ['N° OC', 'Código', 'Descripción', 'Cantidad', 'Fecha entrega', 'Estado', 'Stock almacén'];
+  const cols = ['N° OC', 'Código', 'Descripción', 'Cantidad'];
+  if (!isAdmin) cols.push('Fecha inicio');
+  cols.push('Fecha entrega', 'Estado', 'Stock almacén');
   if (isAdmin) {
     cols.push('Proveedor', 'Acciones');
   } else {
@@ -846,6 +871,7 @@ function renderTable() {
         <td>${oc.codigo}</td>
         <td>${oc.descripcion}</td>
         <td class="mono">${Number(oc.cantidad_total || 0).toLocaleString('es-PE')} ${oc.unidad}</td>
+        ${isAdmin ? '' : `<td class="mono">${oc.fecha_inicio || ''}</td>`}
         <td class="mono">${oc.fecha_entrega || ''}${retrasado ? '<span class="tag">Retrasado</span>' : ''}</td>
         <td>${estadoCell}</td>
         <td class="mono">${Number(oc.stock_almacen || 0).toLocaleString('es-PE')}</td>
@@ -857,16 +883,26 @@ function renderTable() {
 /* ---------------- Cambiar estado ---------------- */
 async function cambiarEstado(rowNumber, estado) {
   if (!estado) return;
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  const estadoPrevio = oc ? oc.estado : null;
+  const stockPrevio = oc ? oc.stock_almacen : null;
+
+  // Actualización optimista: se ve el cambio de inmediato, sin esperar al servidor
+  if (oc) {
+    oc.estado = estado;
+    if (estado === 'Terminado') oc.stock_almacen = Number(oc.cantidad_total);
+    renderCards();
+    renderTable();
+  }
   try {
     const result = await apiCall('updateEstado', { rowNumber, estado });
-    if (result.success) {
-      loadOCs();
-    } else {
+    if (!result.success) {
       alert('No se pudo actualizar el estado: ' + (result.message || ''));
-      loadOCs();
+      if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
     }
   } catch (e) {
     alert('Error de conexión al actualizar el estado.');
+    if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
   }
 }
 
@@ -924,14 +960,40 @@ async function submitOcForm(ev) {
     let result;
     if (rowNumber) {
       result = await apiCall('updateOC', { ...payload, rowNumber });
+      if (result.success) {
+        const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+        if (idx > -1) {
+          allOcs[idx] = {
+            ...allOcs[idx],
+            ...payload,
+            cantidad_total: Number(payload.cantidad_total),
+            precio_unitario: Number(payload.precio_unitario),
+            rowNumber: Number(rowNumber)
+          };
+        }
+        closeOcModal();
+        renderCards();
+        renderTable();
+      } else {
+        alert('No se pudo guardar: ' + (result.message || 'Error desconocido'));
+      }
     } else {
       result = await apiCall('createOC', payload);
-    }
-    if (result.success) {
-      closeOcModal();
-      loadOCs();
-    } else {
-      alert('No se pudo guardar: ' + (result.message || 'Error desconocido'));
+      if (result.success) {
+        allOcs.push({
+          ...payload,
+          cantidad_total: Number(payload.cantidad_total),
+          precio_unitario: Number(payload.precio_unitario),
+          stock_almacen: 0,
+          detalle_entregas: '',
+          rowNumber: result.rowNumber
+        });
+        closeOcModal();
+        renderCards();
+        renderTable();
+      } else {
+        alert('No se pudo guardar: ' + (result.message || 'Error desconocido'));
+      }
     }
   } catch (e) {
     alert('Error de conexión al guardar la OC.');
@@ -970,6 +1032,7 @@ function openDetalleModal(rowNumber) {
     <div><div class="k">Descripción</div><div class="v">${oc.descripcion}</div></div>
     <div><div class="k">Cantidad total</div><div class="v mono">${Number(oc.cantidad_total||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
     <div><div class="k">Stock en almacén</div><div class="v mono">${Number(oc.stock_almacen||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
+    <div><div class="k">Fecha de inicio</div><div class="v mono">${oc.fecha_inicio}</div></div>
     <div><div class="k">Fecha de entrega</div><div class="v mono">${oc.fecha_entrega}</div></div>
     <div><div class="k">Estado</div><div class="v">${oc.estado}</div></div>
     <div><div class="k">Precio unitario</div><div class="v mono">$${Number(oc.precio_unitario||0).toFixed(2)}</div></div>
@@ -1011,8 +1074,17 @@ async function submitEntregaForm(ev) {
   try {
     const result = await apiCall('registrarEntrega', { rowNumber, fecha, cantidad });
     if (result.success) {
+      const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+      if (idx > -1) {
+        allOcs[idx].stock_almacen = Number(result.nuevoStock);
+        allOcs[idx].detalle_entregas = result.nuevoDetalle;
+        if (Number(result.nuevoStock) >= Number(allOcs[idx].cantidad_total)) {
+          allOcs[idx].estado = 'Terminado';
+        }
+      }
       closeDetalleModal();
-      loadOCs();
+      renderCards();
+      renderTable();
     } else {
       alert('No se pudo registrar la entrega: ' + (result.message || ''));
     }
