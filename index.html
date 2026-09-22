@@ -140,7 +140,7 @@
   header.app-header{
     background:linear-gradient(115deg,var(--primary) 0%,var(--primary2) 55%,var(--accent) 130%);
     color:var(--primary-ink);
-    padding:14px 24px;
+    padding:14px 32px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -181,9 +181,9 @@
   header.app-header .logout:hover{background:rgba(255,255,255,.1);}
 
   main{
-    max-width:1280px;
+    max-width:1600px;
     margin:0 auto;
-    padding:24px;
+    padding:24px 32px;
   }
 
   /* ---------- Dashboard cards ---------- */
@@ -292,7 +292,7 @@
     overflow-x:auto;
     box-shadow:0 16px 40px -28px rgba(43,42,107,.4);
   }
-  table{width:100%;border-collapse:collapse;font-size:13px;min-width:920px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:1150px;}
   thead th{
     text-align:left;
     padding:11px 12px;
@@ -361,7 +361,7 @@
   .modal{
     background:#fff;
     width:100%;
-    max-width:560px;
+    max-width:600px;
     max-height:88vh;
     overflow-y:auto;
     border:1px solid var(--border);
@@ -384,6 +384,8 @@
     display:flex;justify-content:flex-end;gap:8px;
   }
   .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+  .field-btn{display:flex;align-items:flex-end;}
+  .field-btn .btn{width:100%;}
   .detalle-info{
     display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;
     padding:14px;background:var(--info-bg);border:1px solid var(--border);
@@ -623,6 +625,21 @@
       <h3 class="subhead">Historial de entregas</h3>
       <ul class="entregas-list hidden" id="entregasList"></ul>
       <div class="entregas-empty hidden" id="entregasEmpty">Aún no se han registrado entregas.</div>
+
+      <h3 class="subhead">Reprogramar fecha de entrega</h3>
+      <form id="fechaForm">
+        <input type="hidden" id="ff_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Nueva fecha de entrega</label>
+            <input type="date" id="ff_nuevaFecha" required>
+          </div>
+          <div class="field field-btn">
+            <button type="submit" class="btn btn-outline btn-block" id="btnActualizarFecha">Actualizar fecha</button>
+          </div>
+        </div>
+      </form>
+
       <h3 class="subhead">Registrar nueva entrega</h3>
       <form id="entregaForm">
         <input type="hidden" id="e_rowNumber">
@@ -659,7 +676,7 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0wxl3Va843gVbG4f9SQoPvEtmVa6wHCIIL8VjpUhOmUQtKdaqFmVGF_utfn2JVbrQxQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxH8oDKGTlBYyNHGJiv-K6MYgHFScMMcXZOcVlQNTNgsIwC9OT6Qa84OFwf8hrbmkrbEQ/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -817,6 +834,7 @@ function bindEvents() {
 
   document.getElementById('detalleModalClose').addEventListener('click', closeDetalleModal);
   document.getElementById('entregaForm').addEventListener('submit', submitEntregaForm);
+  document.getElementById('fechaForm').addEventListener('submit', submitFechaForm);
 
   document.getElementById('btnDashboard').addEventListener('click', openDashboardModal);
   document.getElementById('dashboardModalClose').addEventListener('click', closeDashboardModal);
@@ -834,10 +852,9 @@ async function loadOCs(silent = false) {
       alert('No se pudieron cargar las OCs: ' + (result.message || ''));
     }
   } catch (e) {
+    console.error('[loadOCs] Error real:', e);
     if (!silent) {
-      alert('Error de conexión al cargar las OCs.');
-    } else {
-      console.warn('Sincronización silenciosa falló:', e);
+      alert('Error de conexión al cargar las OCs. Revisa la consola (F12) para más detalle.');
     }
   }
 }
@@ -845,7 +862,8 @@ async function loadOCs(silent = false) {
 function isRetrasado(oc) {
   if (oc.estado === 'Terminado') return false;
   const hoy = new Date(); hoy.setHours(0,0,0,0);
-  const fe = new Date(oc.fecha_entrega + 'T00:00:00');
+  const fechaEfectiva = oc.fecha_entrega_actualizada || oc.fecha_entrega;
+  const fe = new Date(fechaEfectiva + 'T00:00:00');
   if (isNaN(fe.getTime())) return false;
   return fe < hoy;
 }
@@ -877,6 +895,7 @@ function getColumnDefs() {
   ];
   if (!isAdmin) cols.push({ label: 'Fecha inicio', key: 'fecha_inicio', type: 'str' });
   cols.push({ label: 'Fecha entrega', key: 'fecha_entrega', type: 'str' });
+  cols.push({ label: 'Últ. fecha programada', key: 'fecha_entrega_actualizada', type: 'str' });
   cols.push({ label: 'Estado', key: 'estado', type: 'str' });
   cols.push({ label: 'Stock almacén', key: 'stock_almacen', type: 'num' });
   if (isAdmin) {
@@ -978,6 +997,7 @@ function renderTable() {
         <td class="mono">${Number(oc.cantidad_total || 0).toLocaleString('es-PE')} ${oc.unidad}</td>
         ${isAdmin ? '' : `<td class="mono">${oc.fecha_inicio || ''}</td>`}
         <td class="mono">${oc.fecha_entrega || ''}${retrasado ? '<span class="tag">Retrasado</span>' : ''}</td>
+        <td class="mono">${oc.fecha_entrega_actualizada ? oc.fecha_entrega_actualizada : '<span style="color:var(--ink-soft)">—</span>'}</td>
         <td>${estadoCell}</td>
         <td class="mono">${Number(oc.stock_almacen || 0).toLocaleString('es-PE')}</td>
         ${lastCols}
@@ -1091,6 +1111,7 @@ async function submitOcForm(ev) {
           precio_unitario: Number(payload.precio_unitario),
           stock_almacen: 0,
           detalle_entregas: '',
+          fecha_entrega_actualizada: '',
           rowNumber: result.rowNumber
         });
         closeOcModal();
@@ -1131,6 +1152,9 @@ function openDetalleModal(rowNumber) {
   document.getElementById('e_fecha').value = '';
   document.getElementById('e_cantidad').value = '';
 
+  document.getElementById('ff_rowNumber').value = oc.rowNumber;
+  document.getElementById('ff_nuevaFecha').value = oc.fecha_entrega_actualizada || oc.fecha_entrega || '';
+
   document.getElementById('detalleInfo').innerHTML = `
     <div><div class="k">N° OC</div><div class="v mono">${oc.numero_oc}</div></div>
     <div><div class="k">Código</div><div class="v">${oc.codigo}</div></div>
@@ -1138,7 +1162,8 @@ function openDetalleModal(rowNumber) {
     <div><div class="k">Cantidad total</div><div class="v mono">${Number(oc.cantidad_total||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
     <div><div class="k">Stock en almacén</div><div class="v mono">${Number(oc.stock_almacen||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
     <div><div class="k">Fecha de inicio</div><div class="v mono">${oc.fecha_inicio}</div></div>
-    <div><div class="k">Fecha de entrega</div><div class="v mono">${oc.fecha_entrega}</div></div>
+    <div><div class="k">Fecha de entrega (original)</div><div class="v mono">${oc.fecha_entrega}</div></div>
+    <div><div class="k">Última fecha programada</div><div class="v mono">${oc.fecha_entrega_actualizada || 'Sin cambios'}</div></div>
     <div><div class="k">Estado</div><div class="v">${oc.estado}</div></div>
     <div><div class="k">Precio unitario</div><div class="v mono">$${Number(oc.precio_unitario||0).toFixed(2)}</div></div>
   `;
@@ -1293,6 +1318,33 @@ function closeDashboardModal() {
   document.getElementById('dashboardModalOverlay').classList.add('hidden');
 }
 
+async function submitFechaForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('ff_rowNumber').value;
+  const nuevaFecha = document.getElementById('ff_nuevaFecha').value;
+
+  const btn = document.getElementById('btnActualizarFecha');
+  btn.disabled = true;
+  btn.textContent = 'Actualizando...';
+  try {
+    const result = await apiCall('actualizarFechaEntrega', { rowNumber, nuevaFecha });
+    if (result.success) {
+      const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+      if (idx > -1) allOcs[idx].fecha_entrega_actualizada = nuevaFecha;
+      renderCards();
+      renderTable();
+      openDetalleModal(rowNumber); // refresca la info dentro del mismo modal
+    } else {
+      alert('No se pudo actualizar la fecha: ' + (result.message || ''));
+    }
+  } catch (e) {
+    alert('Error de conexión al actualizar la fecha.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Actualizar fecha';
+  }
+}
+
 /* ---------------- Exportar Excel ---------------- */
 function exportExcel() {
   const filtered = getFilteredOcs();
@@ -1308,6 +1360,7 @@ function exportExcel() {
     'Unidad': oc.unidad,
     'Fecha inicio': oc.fecha_inicio,
     'Fecha entrega': oc.fecha_entrega,
+    'Última fecha programada': oc.fecha_entrega_actualizada || '',
     'Estado': oc.estado,
     'Stock almacén': oc.stock_almacen,
     'Precio unitario (USD)': oc.precio_unitario,
