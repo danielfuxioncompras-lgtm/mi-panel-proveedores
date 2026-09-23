@@ -1,1156 +1,1384 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Control de Artes · Fuxion Biotech</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23141C33' stroke-width='2.5'/%3E%3Cpath d='M16 2v28M2 16h28' stroke='%23141C33' stroke-width='2.5'/%3E%3C/svg%3E">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de OCs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-/* ============ Tokens ============ */
-:root{
-  --paper:#ECEFF3; --surface:#FFFFFF; --surface-2:#F6F7F9; --ink:#141C33; --ink-2:#4F5970; --ink-3:#8790A2;
-  --line:#DCE0E7; --line-2:#EBEEF2; --focus:#0091D0;
-  --ok:#12905B; --part:#D69800; --prog:#0A86CC; --obs:#D0156B; --pend:#9BA3B3;
-  --c:#00A0DC; --m:#E0197A; --y:#F5C400; --k:#141C33;
-  --shadow:0 1px 2px rgba(20,28,51,.06),0 8px 24px -12px rgba(20,28,51,.18);
-  --r-s:6px; --r-m:10px; --r-l:14px;
-  --font:"Archivo",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-  color-scheme:light;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --paper:#0D1220; --surface:#151B2C; --surface-2:#1B2236; --ink:#E9ECF3; --ink-2:#AAB2C4; --ink-3:#727C93;
-    --line:#29314A; --line-2:#20273B; --ok:#2DBB7F; --part:#F0B429; --prog:#3AA9EC; --obs:#F0468F; --pend:#6E7890; --k:#E9ECF3;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -14px rgba(0,0,0,.6); color-scheme:dark;
+  :root{
+    --bg:#F3F3FB;
+    --surface:#FFFFFF;
+    --ink:#1B1E2E;
+    --ink-soft:#666E85;
+    --primary:#2B2A6B;
+    --primary2:#5B3FD9;
+    --primary-ink:#F3F1FF;
+    --accent:#7C3AED;
+    --accent2:#C0392B;
+    --accent-ink:#FFFFFF;
+    --border:#E1DFF5;
+    --danger:#E4483A;
+    --danger-bg:#FCE9E7;
+    --success:#159B6B;
+    --success-bg:#E2F7EE;
+    --warning:#E08E00;
+    --warning-bg:#FDF0D9;
+    --info:#2E6EE0;
+    --info-bg:#E7EFFD;
+    --neutral:#7B4FD1;
+    --neutral-bg:#F0EAFB;
+    --teal:#0FA9A0;
+    --teal-bg:#E1F7F5;
   }
-}
-:root[data-theme="dark"]{
-  --paper:#0D1220; --surface:#151B2C; --surface-2:#1B2236; --ink:#E9ECF3; --ink-2:#AAB2C4; --ink-3:#727C93;
-  --line:#29314A; --line-2:#20273B; --ok:#2DBB7F; --part:#F0B429; --prog:#3AA9EC; --obs:#F0468F; --pend:#6E7890; --k:#E9ECF3;
-  --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -14px rgba(0,0,0,.6); color-scheme:dark;
-}
-*{box-sizing:border-box}
-:root{padding-top:env(safe-area-inset-top,0px)}
-html,body{height:100%;margin:0}
-html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
-button,input,select,textarea{font:inherit;color:inherit}
-button{cursor:pointer}
-:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 100% -10%, rgba(124,58,237,.08), transparent),
+      radial-gradient(ellipse 800px 500px at -10% 0%, rgba(46,110,224,.07), transparent),
+      var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
+  .hidden{display:none !important;}
 
-/* status palette helper */
-.st-ok{--s:var(--ok)} .st-part{--s:var(--part)} .st-prog{--s:var(--prog)} .st-obs{--s:var(--obs)} .st-pend{--s:var(--pend)} .st-none{--s:var(--ink-3)}
+  /* ---------- Login ---------- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;
+    max-width:380px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-top:4px solid transparent;
+    border-image:linear-gradient(90deg,var(--primary2),var(--accent),var(--teal)) 1;
+    padding:36px 32px;
+    box-shadow:0 24px 60px -20px rgba(43,42,107,.25);
+  }
+  .login-mark{
+    width:42px;height:42px;
+    background:linear-gradient(135deg,var(--primary2),var(--accent));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:14px;
+    margin-bottom:20px;
+    box-shadow:0 6px 16px -4px rgba(124,58,237,.5);
+  }
+  .login-card h1{
+    font-size:19px;
+    margin:0 0 4px;
+    font-weight:600;
+    letter-spacing:-0.01em;
+  }
+  .login-card p{
+    margin:0 0 24px;
+    color:var(--ink-soft);
+    font-size:13.5px;
+  }
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    font-weight:500;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:10px 11px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:14px;
+    font-family:inherit;
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline:none;
+    border-color:var(--primary2);
+    box-shadow:0 0 0 3px rgba(91,63,217,.14);
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:10px 16px;
+    border:1px solid transparent;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:inherit;
+    transition:transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--primary2),var(--primary));color:#fff;box-shadow:0 6px 16px -6px rgba(43,42,107,.5);}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(43,42,107,.55);}
+  .btn-accent{background:linear-gradient(135deg,var(--accent),var(--primary2));color:#fff;box-shadow:0 6px 16px -6px rgba(124,58,237,.55);}
+  .btn-accent:hover{transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(124,58,237,.6);}
+  .btn-outline{background:#fff;border-color:var(--border);color:var(--ink);}
+  .btn-outline:hover{border-color:var(--primary2);color:var(--primary2);}
+  .btn-danger-text{background:transparent;color:var(--danger);border:none;padding:4px;}
+  .btn-block{width:100%;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;}
+  #loginError{
+    color:var(--danger);
+    font-size:13px;
+    margin-top:12px;
+    display:none;
+  }
 
-/* ============ Layout ============ */
-.app{display:grid;grid-template-columns:236px 1fr;height:100%}
-.side{background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;position:relative;min-height:0}
-.cmyk{display:grid;grid-template-columns:repeat(4,1fr);height:4px}
-.cmyk i:nth-child(1){background:var(--c)}.cmyk i:nth-child(2){background:var(--m)}.cmyk i:nth-child(3){background:var(--y)}.cmyk i:nth-child(4){background:var(--k)}
-.brand{display:flex;gap:10px;align-items:center;padding:18px 18px 20px}
-.brand svg{flex:none}
-.brand b{display:block;font-size:16px;font-weight:750;font-stretch:88%;letter-spacing:-.01em}
-.brand span{display:block;font-size:12px;color:var(--ink-3);line-height:1.25}
-.brand .co{font-size:11.5px;font-weight:650;color:var(--ink-2);margin-bottom:1px}
-.nav{display:flex;flex-direction:column;gap:2px;padding:0 10px}
-.nav a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--r-s);color:var(--ink-2);text-decoration:none;font-weight:520}
-.nav a svg{flex:none;opacity:.8}
-.nav a:hover{background:var(--surface-2);color:var(--ink)}
-.nav a.on{background:var(--ink);color:var(--surface)}
-.nav a.on svg{opacity:1}
-.nav a .n{margin-left:auto;font-size:12px;font-variant-numeric:tabular-nums;opacity:.7}
-.side-foot{margin-top:auto;padding:14px;border-top:1px solid var(--line-2);display:flex;flex-direction:column;gap:10px}
-.conn{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--ink-2);line-height:1.3}
-.conn .dot{width:8px;height:8px;border-radius:50%;margin-top:4px;flex:none;background:var(--part)}
-.conn.live .dot{background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 20%,transparent)}
-.conn b{display:block;color:var(--ink);font-weight:600}
-.side-actions{display:flex;gap:6px}
+  /* ---------- App shell ---------- */
+  header.app-header{
+    background:linear-gradient(115deg,var(--primary) 0%,var(--primary2) 55%,var(--accent) 130%);
+    color:var(--primary-ink);
+    padding:14px 32px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow:0 8px 24px -12px rgba(43,42,107,.5);
+  }
+  header.app-header .brand{
+    display:flex;align-items:center;gap:10px;
+  }
+  header.app-header .brand .mark{
+    width:30px;height:30px;background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.35);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
+  }
+  header.app-header h1{
+    font-size:15px;
+    font-weight:600;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  header.app-header .userbox{
+    display:flex;align-items:center;gap:12px;
+    font-size:13px;
+  }
+  header.app-header .userbox .rolechip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    font-weight:600;
+    padding:3px 9px;
+    background:rgba(255,255,255,.18);
+    border:1px solid rgba(255,255,255,.3);
+  }
+  header.app-header .logout{
+    background:transparent;border:1px solid rgba(255,255,255,.3);
+    color:var(--primary-ink);padding:6px 11px;font-size:12.5px;cursor:pointer;
+    font-family:inherit;
+  }
+  header.app-header .logout:hover{background:rgba(255,255,255,.1);}
 
-.main{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%}
-.top{display:flex;align-items:center;gap:12px;padding:14px 28px;background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-.top h1{margin:0;font-size:21px;font-weight:760;font-stretch:90%;letter-spacing:-.015em;white-space:nowrap}
-.top .sub{color:var(--ink-3);font-size:13px;white-space:nowrap}
-.search{margin-left:auto;position:relative;width:min(340px,40vw)}
-.search input{width:100%;height:38px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-m);padding:0 12px 0 36px}
-.search svg{position:absolute;left:11px;top:11px;color:var(--ink-3)}
-.search kbd{position:absolute;right:9px;top:9px;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--ink-3);background:var(--surface-2);font-family:var(--font)}
-.content{flex:1;overflow:auto;padding:22px 28px 60px}
-.wrap{max-width:1360px;margin:0 auto}
+  main{
+    max-width:1600px;
+    margin:0 auto;
+    padding:24px 32px;
+  }
 
-/* ============ Controls ============ */
-.btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:var(--r-m);border:1px solid var(--line);background:var(--surface);font-weight:600;white-space:nowrap}
-.btn:hover{border-color:var(--ink-3)}
-.btn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.btn.primary:hover{opacity:.92}
-.btn.ghost{background:transparent;border-color:transparent}
-.btn.ghost:hover{background:var(--surface-2)}
-.btn.danger{color:var(--obs)}
-.btn.sm{height:32px;padding:0 10px;font-size:13px}
-.btn.icon{width:38px;padding:0;justify-content:center}
-.btn.sm.icon{width:32px}
-.btn[disabled]{opacity:.5;cursor:not-allowed}
-.btn.busy{pointer-events:none;opacity:.7}
-.seg-ctl{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:3px;gap:2px}
-.seg-ctl button{border:0;background:transparent;padding:5px 12px;border-radius:7px;font-weight:560;color:var(--ink-2);font-size:13px}
-.seg-ctl button.on{background:var(--ink);color:var(--surface)}
-select.sel,input.inp,textarea.inp{height:36px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r-s);padding:0 10px;min-width:0}
-textarea.inp{height:auto;min-height:84px;padding:9px 10px;resize:vertical;line-height:1.45;width:100%}
-.toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);user-select:none;cursor:pointer}
-.toggle input{accent-color:var(--obs);width:16px;height:16px}
+  /* ---------- Dashboard cards ---------- */
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .card{
+    position:relative;
+    background:var(--surface);
+    padding:18px 18px 16px;
+    border:1px solid var(--border);
+    overflow:hidden;
+  }
+  .card::before{
+    content:'';
+    position:absolute;top:0;left:0;right:0;height:4px;
+    background:var(--primary2);
+  }
+  .card.c-kg::before{background:var(--info);}
+  .card.c-mill::before{background:var(--accent);}
+  .card.c-alert::before{background:var(--danger);}
+  .card .icon{
+    width:30px;height:30px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--neutral-bg);color:var(--primary2);
+    font-size:15px;margin-bottom:12px;
+  }
+  .card.c-kg .icon{background:var(--info-bg);color:var(--info);}
+  .card.c-mill .icon{background:var(--neutral-bg);color:var(--accent);}
+  .card.c-alert .icon{background:var(--danger-bg);color:var(--danger);}
+  .card .label{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-weight:500;
+    margin-bottom:6px;
+  }
+  .card .value{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:27px;
+    font-weight:600;
+    letter-spacing:-0.02em;
+    color:var(--primary);
+  }
+  .card.c-kg .value{color:var(--info);}
+  .card.c-mill .value{color:var(--accent);}
+  .card.c-alert .value{color:var(--danger);}
 
-/* ============ Cards / panels ============ */
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow)}
-.card-h{display:flex;align-items:baseline;gap:10px;padding:16px 20px 0}
-.card-h h2{margin:0;font-size:16px;font-weight:700;font-stretch:92%}
-.card-h .hint{color:var(--ink-3);font-size:12.5px}
-.card-h .right{margin-left:auto}
-.card-b{padding:14px 20px 18px}
-.grid{display:grid;gap:18px}
-.g-2{grid-template-columns:1.25fr 1fr}
-.g-2b{grid-template-columns:1fr 1fr}
-.bar-row{display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .search-wrap{
+    position:relative;
+    flex:1 1 240px;
+    min-width:200px;
+  }
+  .search-wrap input{
+    width:100%;
+    padding:9px 12px 9px 34px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:13.5px;
+    font-family:inherit;
+  }
+  .search-wrap input:focus{outline:none;border-color:var(--primary);}
+  .search-wrap svg{
+    position:absolute;left:11px;top:50%;transform:translateY(-50%);
+    width:15px;height:15px;color:var(--ink-soft);
+  }
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{
+    padding:7px 13px;
+    border:1px solid var(--border);
+    background:#fff;
+    font-size:12.5px;
+    font-weight:500;
+    color:var(--ink-soft);
+    cursor:pointer;
+    font-family:inherit;
+    white-space:nowrap;
+    transition:transform .1s ease;
+  }
+  .chip:hover{transform:translateY(-1px);}
+  .chip.active{
+    background:var(--primary2);
+    border-color:var(--primary2);
+    color:#fff;
+  }
+  .chip[data-estado="Inicio"].active{background:var(--neutral);border-color:var(--neutral);}
+  .chip[data-estado="En Producción"].active{background:var(--warning);border-color:var(--warning);}
+  .chip[data-estado="Por Entregar"].active{background:var(--info);border-color:var(--info);}
+  .chip[data-estado="Terminado"].active{background:var(--success);border-color:var(--success);}
+  .toolbar-actions{display:flex;gap:8px;margin-left:auto;}
 
-/* KPI line */
-.kpis{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:var(--r-l);background:var(--surface);overflow:hidden;box-shadow:var(--shadow)}
-.kpi{padding:14px 18px;border-left:1px solid var(--line-2);display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border-top:0;border-right:0;border-bottom:0}
-.kpi:first-child{border-left:0}
-.kpi b{font-size:26px;font-weight:720;font-stretch:85%;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.kpi span{color:var(--ink-2);font-size:12.5px}
-button.kpi:hover{background:var(--surface-2)}
-.kpi.warn b{color:var(--obs)}
+  /* ---------- Table ---------- */
+  .table-wrap{
+    background:var(--surface);
+    border:1px solid var(--border);
+    overflow-x:auto;
+    box-shadow:0 16px 40px -28px rgba(43,42,107,.4);
+  }
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:1150px;}
+  thead th{
+    text-align:left;
+    padding:11px 12px;
+    background:var(--neutral-bg);
+    border-bottom:1px solid var(--border);
+    color:var(--primary);
+    font-weight:600;
+    font-size:11.5px;
+    white-space:nowrap;
+  }
+  thead th.th-sortable{cursor:pointer;user-select:none;}
+  thead th.th-sortable:hover{color:var(--accent);}
+  thead th.th-active{color:var(--accent);}
+  tbody td{
+    padding:10px 12px;
+    border-bottom:1px solid var(--border);
+    vertical-align:middle;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr.retrasado{background:var(--danger-bg);}
+  tbody tr:hover{background:#F6F4FE;}
+  tbody tr.retrasado:hover{background:#F9DAD6;}
+  .oc-num{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--primary2);}
+  .tag{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:10.5px;font-weight:600;
+    padding:2px 6px;
+    background:var(--danger);color:#fff;
+    margin-left:6px;
+  }
+  select.estado-select{
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:600;
+    padding:6px 8px;
+    border:1px solid transparent;
+    background:#fff;
+    color:var(--ink);
+    min-width:132px;
+    cursor:pointer;
+  }
+  select.estado-select.est-inicio{background:var(--neutral-bg);color:var(--neutral);border-color:#DDD0F5;}
+  select.estado-select.est-produccion{background:var(--warning-bg);color:var(--warning);border-color:#F5DEA6;}
+  select.estado-select.est-entregar{background:var(--info-bg);color:var(--info);border-color:#C9DCFB;}
+  select.estado-select.est-terminado{background:var(--success-bg);color:var(--success);border-color:#B9EDD3;}
+  .row-actions{display:flex;gap:4px;align-items:center;}
+  .icon-btn{
+    background:#fff;border:1px solid var(--border);
+    width:28px;height:28px;
+    display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:13px;
+  }
+  .icon-btn:hover{border-color:var(--primary2);background:var(--neutral-bg);}
+  .empty-state{
+    padding:48px 24px;text-align:center;color:var(--ink-soft);font-size:13.5px;
+  }
 
-/* Control strip (tira de control) */
-.tira{display:flex;flex-direction:column;gap:12px}
-.tira-row{display:grid;grid-template-columns:120px 1fr 56px 104px;align-items:center;gap:14px}
-.tira-row .lbl{font-weight:640;font-stretch:92%;display:flex;align-items:center;gap:8px}
-.tira-row .lbl em{font-style:normal;color:var(--ink-3);font-weight:500;font-size:12px}
-.stack{display:flex;height:22px;border-radius:3px;overflow:hidden;background:var(--line-2);position:relative}
-.stack i{display:block;height:100%;background:var(--s);min-width:0;transition:flex-grow .5s}
-.stack i.st-none{background:repeating-linear-gradient(135deg,var(--line) 0 4px,transparent 4px 8px)}
-.stack i + i{box-shadow:inset 2px 0 0 var(--surface)}
-.tira-row .pct{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
-.tira-row .here{white-space:nowrap;font-size:12.5px;color:var(--ink-2);text-align:right;background:none;border:0;padding:0;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
-.tira-row .here:hover{color:var(--ink);text-decoration-color:var(--ink)}
-.tira-marks{display:flex;justify-content:space-between;align-items:center;color:var(--ink-3);margin-top:4px}
-.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--ink-2)}
-.legend span{display:inline-flex;align-items:center;gap:6px}
-.legend i{width:10px;height:10px;border-radius:2px;background:var(--s)}
-.legend i.st-none{background:repeating-linear-gradient(135deg,var(--ink-3) 0 2px,transparent 2px 4px)}
+  /* ---------- Modal ---------- */
+  .modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(26,31,43,.5);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .modal{
+    background:#fff;
+    width:100%;
+    max-width:600px;
+    max-height:88vh;
+    overflow-y:auto;
+    border:1px solid var(--border);
+    border-top:4px solid transparent;
+    border-image:linear-gradient(90deg,var(--primary2),var(--accent)) 1;
+    box-shadow:0 30px 70px -24px rgba(43,42,107,.4);
+  }
+  .modal-header{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 22px;
+    border-bottom:1px solid var(--border);
+    background:var(--neutral-bg);
+  }
+  .modal-header h2{font-size:15.5px;margin:0;font-weight:600;}
+  .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:var(--ink-soft);line-height:1;}
+  .modal-body{padding:20px 22px;}
+  .modal-footer{
+    padding:16px 22px;
+    border-top:1px solid var(--border);
+    display:flex;justify-content:flex-end;gap:8px;
+  }
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+  .field-btn{display:flex;align-items:flex-end;}
+  .field-btn .btn{width:100%;}
+  .detalle-info{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;
+    padding:14px;background:var(--info-bg);border:1px solid var(--border);
+    margin-bottom:18px;font-size:13px;
+  }
+  .detalle-info .k{color:var(--ink-soft);font-size:11px;margin-bottom:2px;}
+  .detalle-info .v{font-weight:600;color:var(--primary);}
+  .entregas-list{list-style:none;margin:0 0 18px;padding:0;border:1px solid var(--border);}
+  .entregas-list li{
+    padding:9px 12px;font-size:12.5px;
+    border-bottom:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace;
+    display:flex;justify-content:space-between;
+  }
+  .entregas-list li:last-child{border-bottom:none;}
+  .entregas-empty{padding:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;border:1px dashed var(--border);margin-bottom:18px;}
+  h3.subhead{font-size:12.5px;text-transform:none;color:var(--ink-soft);font-weight:600;margin:0 0 10px;}
 
-/* Country table */
-.ctab{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.ctab th{font-size:12px;color:var(--ink-3);font-weight:560;text-align:left;padding:0 8px 8px;border-bottom:1px solid var(--line)}
-.ctab td{padding:10px 8px;border-bottom:1px solid var(--line-2);vertical-align:middle}
-.ctab tr:last-child td{border-bottom:0}
-.ctab td.p{font-weight:650}
-.ctab tbody tr{cursor:pointer}
-.ctab tbody tr:hover td{background:var(--surface-2)}
-.mini{display:flex;align-items:center;gap:8px;min-width:96px}
-.mini .t{flex:1;height:6px;border-radius:3px;background:var(--line-2);overflow:hidden}
-.mini .t i{display:block;height:100%;background:var(--ok);border-radius:3px}
-.mini b{font-weight:600;font-size:12.5px;width:34px;text-align:right}
+  /* ---------- Dashboard admin ---------- */
+  .modal-wide{max-width:780px;}
+  .dash-summary{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:10px;
+    margin-bottom:24px;
+  }
+  .dash-stat{background:var(--neutral-bg);padding:12px 13px;border:1px solid var(--border);}
+  .dash-stat .k{font-size:10.5px;color:var(--ink-soft);margin-bottom:5px;}
+  .dash-stat .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:17px;color:var(--primary);}
+  .dash-stat-danger{background:var(--danger-bg);}
+  .dash-stat-danger .v{color:var(--danger);}
+  .dash-bars{margin-bottom:26px;}
+  .dash-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;}
+  .dash-bar-label{width:112px;flex-shrink:0;color:var(--ink-soft);font-weight:500;}
+  .dash-bar-track{flex:1;height:10px;background:var(--border);position:relative;overflow:hidden;}
+  .dash-bar-fill{height:100%;transition:width .3s ease;}
+  .dash-neutral{background:var(--neutral);}
+  .dash-warning{background:var(--warning);}
+  .dash-info{background:var(--info);}
+  .dash-success{background:var(--success);}
+  .dash-bar-count{width:26px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--ink);}
+  .dash-table-wrap{box-shadow:none;}
+  .dash-table-wrap table{min-width:0;}
 
-/* Alerts */
-.alerts{display:flex;flex-direction:column;gap:10px}
-.alert{border:1px solid var(--line);border-left:4px solid var(--s);border-radius:var(--r-m);padding:11px 14px;background:var(--surface)}
-.alert-h{display:flex;gap:10px;align-items:baseline}
-.alert-h b{font-weight:680}
-.alert-h .c{margin-left:auto;font-weight:720;font-variant-numeric:tabular-nums;color:var(--s)}
-.alert p{margin:3px 0 8px;color:var(--ink-2);font-size:13px}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:540}
-button.chip:hover{border-color:var(--ink-3)}
-.empty{padding:26px 10px;text-align:center;color:var(--ink-3)}
-.empty b{display:block;color:var(--ink-2);margin-bottom:4px}
+  /* ---------- Print ---------- */
+  @media print{
+    header.app-header, .toolbar, .cards, .row-actions-col, .no-print{display:none !important;}
+    body{background:#fff;}
+    main{padding:0;max-width:none;}
+    .table-wrap{border:none;}
+    table{min-width:0;font-size:11px;}
+  }
 
-/* Upcoming */
-.ev{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line-2);cursor:pointer}
-.ev:last-child{border-bottom:0}
-.ev .d{text-align:center;border:1px solid var(--line);border-radius:8px;padding:4px 0;line-height:1.1}
-.ev .d b{display:block;font-size:18px;font-weight:720;font-stretch:85%}
-.ev .d span{font-size:11px;color:var(--ink-3)}
-.ev .w{font-weight:600}
-.ev .w small{display:block;color:var(--ink-3);font-weight:450;font-size:12.5px}
-.ev .rel{font-size:12.5px;color:var(--ink-2)}
-
-/* Pills and flags */
-.pill{display:inline-flex;align-items:center;gap:6px;padding:2px 9px 2px 7px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;color:var(--s);background:color-mix(in srgb,var(--s) 12%,transparent)}
-.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--s)}
-.pill.st-none{color:var(--ink-3);background:var(--surface-2)}
-.pill.st-none::before{background:none;border:1.5px dashed var(--ink-3);width:5px;height:5px}
-.cc{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:20px;padding:0 5px;border-radius:4px;border:1px solid var(--line);font-size:11px;font-weight:700;letter-spacing:.02em;color:var(--ink-2);background:var(--surface-2)}
-.prio{font-size:12px;font-weight:700;color:var(--ink-2)}
-.prio.p1{color:var(--obs)}
-.tag{font-size:11.5px;color:var(--ink-3)}
-
-/* Stage strip */
-.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;min-width:150px}
-.strip .sg{height:9px;border-radius:2px;background:var(--s);position:relative}
-.strip .sg.st-none{background:repeating-linear-gradient(135deg,var(--line) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--line)}
-.strip .sg.cur::after{content:"";position:absolute;left:50%;top:-6px;transform:translateX(-50%);border:4px solid transparent;border-top-color:var(--ink)}
-.strip-big{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
-.strip-big .sg{border-top:6px solid var(--s);background:var(--surface-2);border-radius:3px;padding:7px 8px 8px;min-width:0}
-.strip-big .sg.st-none{border-top-color:transparent;background-image:linear-gradient(var(--surface-2),var(--surface-2)),repeating-linear-gradient(135deg,var(--line) 0 3px,transparent 3px 6px);background-size:100% 100%,100% 6px;background-repeat:no-repeat;background-origin:border-box;border-top:6px solid transparent;background-clip:padding-box,border-box}
-.strip-big .sg.cur{outline:2px solid var(--ink);outline-offset:-1px}
-.strip-big b{display:block;font-size:12px;font-weight:700;font-stretch:84%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.strip-big small{display:block;font-size:11.5px;color:var(--s);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.strip-big .sg.st-none small{color:var(--ink-3)}
-
-/* ============ Filters ============ */
-.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
-.filters .count{margin-left:auto;color:var(--ink-3);font-size:13px;font-variant-numeric:tabular-nums}
-.pchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.pchips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:560;color:var(--ink-2)}
-.pchips button.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
-.pchips button span{opacity:.6;margin-left:4px;font-variant-numeric:tabular-nums}
-
-/* ============ Record list ============ */
-.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);box-shadow:var(--shadow);overflow:hidden}
-.lrow{display:grid;grid-template-columns:minmax(220px,2.4fr) 62px 52px minmax(160px,1.3fr) 128px minmax(130px,1fr) 104px;gap:14px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line-2)}
-.lrow:last-child{border-bottom:0}
-.lhead{background:var(--surface-2);font-size:12px;color:var(--ink-3);font-weight:560;padding-top:9px;padding-bottom:9px;position:sticky;top:0;z-index:1}
-.lhead button{background:none;border:0;padding:0;color:inherit;font-weight:inherit;display:inline-flex;gap:4px;align-items:center;text-align:left}
-.lhead button:hover{color:var(--ink)}
-.lhead button.on{color:var(--ink)}
-.lbody .lrow{cursor:pointer}
-.lbody .lrow:hover{background:var(--surface-2)}
-.pname{min-width:0}
-.pname b{display:block;font-weight:680;font-stretch:90%;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pname small{display:block;color:var(--ink-3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.curst{font-size:13px;font-weight:600}
-.curst small{display:block;font-weight:450;color:var(--ink-3);font-size:12px}
-.upd{font-size:12.5px;color:var(--ink-3)}
-.m-lbl{display:none}
-
-/* ============ Board ============ */
-.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:14px;overflow-x:auto;padding-bottom:10px;align-items:start}
-.col{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-l);display:flex;flex-direction:column;max-height:calc(100vh - 230px);min-height:160px}
-.col-h{padding:12px 14px 10px;border-top:4px solid var(--s);border-radius:var(--r-l) var(--r-l) 0 0;display:flex;align-items:baseline;gap:8px}
-.col-h b{font-weight:720;font-stretch:90%}
-.col-h span{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ink-3);font-weight:600}
-.col-h small{display:block;color:var(--ink-3);font-size:12px;font-weight:450}
-.col-b{padding:4px 10px 12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
-.kc{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-m);padding:10px 12px;cursor:pointer;text-align:left;width:100%;display:flex;flex-direction:column;gap:8px}
-.kc:hover{border-color:var(--ink-3)}
-.kc .t{display:flex;gap:8px;align-items:flex-start}
-.kc .t b{font-weight:680;font-stretch:90%;line-height:1.25;flex:1}
-.kc .f{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.kc .f .upd{margin-left:auto}
-.kc .strip{min-width:0}
-
-/* ============ Insumos ============ */
-.tscroll{overflow-x:auto}
-.itab{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;min-width:920px}
-.itab th{position:sticky;top:0;background:var(--surface-2);font-size:12px;color:var(--ink-3);font-weight:560;text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
-.itab th.n,.itab td.n{text-align:right}
-.itab th button{background:none;border:0;padding:0;color:inherit;font-weight:inherit}
-.itab td{padding:10px 12px;border-bottom:1px solid var(--line-2);vertical-align:middle}
-.itab tbody tr{cursor:pointer}
-.itab tbody tr:hover td{background:var(--surface-2)}
-.itab td .sub{display:block;font-size:12px;color:var(--ink-3)}
-.cov{display:flex;align-items:center;gap:8px;min-width:150px}
-.cov .t{flex:1;height:8px;background:var(--line-2);border-radius:4px;overflow:hidden;position:relative}
-.cov .t i{display:block;height:100%;background:var(--s);border-radius:4px}
-.cov .t::after{content:"";position:absolute;left:25%;top:-2px;bottom:-2px;width:1px;background:var(--ink-3);opacity:.6}
-.cov b{width:52px;text-align:right;font-weight:680;color:var(--s)}
-.cov.st-none .t i{background:var(--ink-3);opacity:.5}
-.nd{color:var(--ink-3);font-size:12px}
-
-/* ============ History ============ */
-.hday{font-size:12.5px;font-weight:650;color:var(--ink-3);margin:18px 0 8px}
-.hday:first-child{margin-top:0}
-.hitem{display:grid;grid-template-columns:54px 1fr;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line-2);align-items:start}
-.hitem:last-child{border-bottom:0}
-.hitem time{color:var(--ink-3);font-size:12.5px;font-variant-numeric:tabular-nums;padding-top:1px}
-.hitem .who{font-size:12.5px;color:var(--ink-3)}
-.hitem .what{font-weight:600}
-.hitem .what button{background:none;border:0;padding:0;font-weight:680;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
-.chg{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px;font-size:13px}
-.chg s{color:var(--ink-3)}
-.chg .arrow{color:var(--ink-3)}
-
-/* ============ Drawer ============ */
-.scrim{position:fixed;inset:0;background:rgba(10,14,28,.38);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
-.scrim.on{opacity:1;pointer-events:auto}
-.drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);background:var(--surface);z-index:41;transform:translateX(102%);transition:transform .26s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 50px -20px rgba(0,0,0,.35);padding-top:env(safe-area-inset-top,0px)}
-.drawer.on{transform:none}
-.dr-h{padding:18px 22px 14px;border-bottom:1px solid var(--line)}
-.dr-h .row{display:flex;gap:10px;align-items:flex-start}
-.dr-h h3{margin:0;font-size:22px;font-weight:760;font-stretch:88%;letter-spacing:-.015em;line-height:1.15;flex:1}
-.dr-h .meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0 14px;color:var(--ink-3);font-size:12.5px}
-.dr-b{flex:1;overflow:auto;padding:4px 22px 30px}
-.sec{padding:18px 0 4px;border-bottom:1px solid var(--line-2)}
-.sec:last-child{border-bottom:0}
-.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.sec-h h4{margin:0;font-size:14.5px;font-weight:700;font-stretch:92%}
-.sec-h .area{font-size:11.5px;font-weight:650;color:var(--ink-3);border:1px solid var(--line);border-radius:4px;padding:0 6px}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px}
-.fld{display:flex;flex-direction:column;gap:5px;min-width:0}
-.fld.full{grid-column:1/-1}
-.fld label{font-size:12.5px;color:var(--ink-2);font-weight:560}
-.fld .inp,.fld .sel{width:100%}
-.fld.changed label::after{content:" · modificado";color:var(--prog);font-weight:500}
-.stbtns{display:flex;flex-wrap:wrap;gap:6px}
-.stbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px 5px 9px;font-size:13px;font-weight:560;color:var(--ink-2)}
-.stbtn i{width:9px;height:9px;border-radius:50%;background:var(--s)}
-.stbtn:hover{border-color:var(--s)}
-.stbtn.on{background:var(--s);border-color:var(--s);color:#fff}
-.stbtn.on i{background:#fff}
-.segf{display:inline-flex;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r-s);overflow:hidden;max-width:100%}
-.segf button{border:0;background:var(--surface);padding:6px 14px;font-weight:600;font-size:13px;color:var(--ink-2);border-left:1px solid var(--line)}
-.segf button:first-child{border-left:0}
-.segf button.on{background:var(--ink);color:var(--surface)}
-.dr-f{border-top:1px solid var(--line);padding:12px 22px calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:8px;align-items:center;background:var(--surface)}
-.dr-f .st{font-size:12.5px;color:var(--ink-3);margin-right:auto}
-.dr-f .st.dirty{color:var(--prog);font-weight:600}
-.rel-ins{display:flex;flex-direction:column;gap:6px}
-.rel-ins .ri{display:grid;grid-template-columns:1fr 150px;gap:10px;align-items:center;font-size:13px}
-.rel-ins .ri span{color:var(--ink-3);font-size:12px;display:block}
-.hmini{display:flex;flex-direction:column;gap:8px;font-size:13px}
-.hmini div{display:grid;grid-template-columns:86px 1fr;gap:10px}
-.hmini time{color:var(--ink-3);font-size:12px}
-
-/* ============ Modal / toast ============ */
-.modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(10,14,28,.45)}
-.modal.on{display:flex}
-.mbox{background:var(--surface);border-radius:var(--r-l);width:min(540px,100%);max-height:calc(100% - 20px);overflow:auto;box-shadow:0 30px 80px -20px rgba(0,0,0,.45);border:1px solid var(--line)}
-.mbox .mh{padding:20px 22px 6px}
-.mbox .mh h3{margin:0 0 4px;font-size:19px;font-weight:740;font-stretch:90%}
-.mbox .mh p{margin:0;color:var(--ink-2);font-size:13.5px}
-.mbox .mb{padding:14px 22px}
-.mbox .mf{padding:12px 22px 18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.steps{margin:12px 0 0;padding-left:20px;color:var(--ink-2);font-size:13px}
-.steps li{margin-bottom:4px}
-.note{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-m);padding:10px 12px;font-size:13px;color:var(--ink-2)}
-.toasts{position:fixed;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:80;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
-.toast{background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:var(--r-m);font-weight:560;box-shadow:var(--shadow);animation:tin .25s ease-out;pointer-events:auto;max-width:90vw}
-.toast.err{background:var(--obs);color:#fff}
-@keyframes tin{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.banner{display:flex;gap:12px;align-items:center;background:color-mix(in srgb,var(--part) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--part) 45%,transparent);border-radius:var(--r-m);padding:10px 14px;margin-bottom:18px;font-size:13.5px}
-.banner b{font-weight:680}
-.banner .btn{margin-left:auto}
-.loading{padding:80px 0;text-align:center;color:var(--ink-3)}
-.spin{width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
-@keyframes sp{to{transform:rotate(360deg)}}
-
-/* ============ Responsive ============ */
-@media (max-width:1180px){
-  .g-2,.g-2b{grid-template-columns:1fr}
-  .lrow{grid-template-columns:minmax(200px,2fr) 56px 48px minmax(150px,1.3fr) 120px 100px}
-  .lrow .c-art{display:none}
-}
-@media (max-width:820px){
-  .app{grid-template-columns:1fr}
-  .side{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:30;border-right:0;border-top:1px solid var(--line);flex-direction:row;padding-bottom:env(safe-area-inset-bottom,0px)}
-  .side .cmyk,.side .brand,.side-foot{display:none}
-  .nav{flex-direction:row;padding:6px;gap:2px;width:100%}
-  .nav a{flex:1;flex-direction:column;gap:2px;font-size:11px;padding:6px 2px;text-align:center}
-  .nav a .n{display:none}
-  .top{padding:12px 16px;flex-wrap:wrap}
-  .top .sub{display:none}
-  .search{order:5;width:100%;margin-left:0}
-  .search kbd{display:none}
-  .banner{flex-wrap:wrap}.banner .btn{margin-left:0}
-  .top .btn .lbl{display:none}
-  .top .btn.primary{width:38px;padding:0;justify-content:center}
-  .top .tools{margin-left:auto;display:flex;gap:6px}
-  .content{padding:16px 14px 110px}
-  .kpis{grid-template-columns:repeat(2,1fr)}
-  .kpi{border-top:1px solid var(--line-2)}
-  .tira-row{grid-template-columns:90px 1fr 48px}
-  .tira-row .here{display:none}
-  .lhead{display:none}
-  .lrow{grid-template-columns:1fr auto;grid-template-areas:"n n" "s s" "c p";gap:8px 10px;padding:14px 16px}
-  .lrow .c-n{grid-area:n}.lrow .c-s{grid-area:s}.lrow .c-cur{grid-area:c}.lrow .c-pais{grid-area:p;justify-self:end}
-  .lrow .c-pr,.lrow .c-upd,.lrow .c-art{display:none}
-  .fgrid{grid-template-columns:1fr}
-  .strip-big{grid-template-columns:repeat(3,1fr)}
-  .col{max-height:none}
-  .board{grid-auto-columns:82%}
-}
-@media (min-width:821px){ .top .tools{display:flex;gap:8px} }
+  @media (max-width:720px){
+    .cards{grid-template-columns:repeat(2,1fr);}
+    .toolbar-actions{margin-left:0;width:100%;}
+    .grid-2{grid-template-columns:1fr;}
+    .dash-summary{grid-template-columns:repeat(2,1fr);}
+    .dash-bar-label{width:88px;}
+  }
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="side" aria-label="Navegación">
-    <div class="cmyk" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-    <div class="brand">
-      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="17" cy="17" r="4" fill="currentColor"/><path d="M17 1v32M1 17h32" stroke="currentColor" stroke-width="2.2"/></svg>
-      <div><span class="co">Fuxion Biotech</span><b>Control de Artes</b><span>Seguimiento de artes y embalajes</span></div>
-    </div>
-    <nav class="nav" id="nav"></nav>
-    <div class="side-foot">
-      <div class="conn" id="conn"></div>
-      <div class="side-actions">
-        <button class="btn sm" data-act="settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
-        <button class="btn sm icon" data-act="theme" title="Cambiar tema" aria-label="Cambiar tema"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-      </div>
-    </div>
-  </aside>
 
-  <div class="main">
-    <header class="top">
-      <div><h1 id="title">Panel</h1></div>
-      <div class="sub" id="subtitle"></div>
-      <label class="search"><span class="sr">Buscar</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input id="q" type="search" placeholder="Buscar producto, código o país" autocomplete="off"><kbd>/</kbd>
-      </label>
-      <div class="tools">
-        <button class="btn icon" data-act="refresh" title="Actualizar datos" aria-label="Actualizar datos"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg></button>
-        <button class="btn primary" data-act="new"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg><span class="lbl">Nuevo registro</span></button>
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <form class="login-card" id="loginForm">
+    <div class="login-mark">OC</div>
+    <h1>Control de Órdenes de Compra</h1>
+    <p>Ingresa con tu correo y contraseña.</p>
+    <div class="field">
+      <label for="loginEmail">Correo</label>
+      <input type="email" id="loginEmail" required autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="loginPassword">Contraseña</label>
+      <input type="password" id="loginPassword" required autocomplete="current-password">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Ingresar</button>
+    <div id="loginError"></div>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="appScreen" class="hidden">
+  <header class="app-header">
+    <div class="brand">
+      <div class="mark">OC</div>
+      <h1>Control de Órdenes de Compra</h1>
+    </div>
+    <div class="userbox">
+      <span id="userName"></span>
+      <span class="rolechip" id="userRol"></span>
+      <button class="logout" id="logoutBtn">Salir</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="cards">
+      <div class="card">
+        <div class="icon">📦</div>
+        <div class="label">Total OCs</div>
+        <div class="value" id="cardTotal">0</div>
       </div>
-    </header>
-    <main class="content"><div class="wrap" id="view"><div class="loading"><div class="spin"></div>Cargando seguimiento…</div></div></main>
+      <div class="card c-kg">
+        <div class="icon">⚖️</div>
+        <div class="label">Total en Kilos</div>
+        <div class="value" id="cardKg">0</div>
+      </div>
+      <div class="card c-mill">
+        <div class="icon">🧮</div>
+        <div class="label">Total en Millares</div>
+        <div class="value" id="cardMill">0</div>
+      </div>
+      <div class="card c-alert">
+        <div class="icon">⏰</div>
+        <div class="label">OCs Retrasadas</div>
+        <div class="value" id="cardRetrasadas">0</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Buscar por N° OC, código o descripción...">
+      </div>
+      <div class="chips" id="filterChips">
+        <button class="chip active" data-estado="Todos">Todos</button>
+        <button class="chip" data-estado="Inicio">Inicio</button>
+        <button class="chip" data-estado="En Producción">En Producción</button>
+        <button class="chip" data-estado="Por Entregar">Por Entregar</button>
+        <button class="chip" data-estado="Terminado">Terminado</button>
+      </div>
+      <div class="toolbar-actions no-print">
+        <button class="btn btn-outline" id="btnRefresh" title="Traer los últimos cambios del servidor">↻ Actualizar</button>
+        <button class="btn btn-outline" id="btnExport">Exportar Excel</button>
+        <button class="btn btn-outline" id="btnPrint">Imprimir / PDF</button>
+        <button class="btn btn-outline hidden" id="btnDashboard">📊 Dashboard</button>
+        <button class="btn btn-accent hidden" id="btnNuevaOC">+ Nueva OC</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr id="tableHeadRow"></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state hidden" id="emptyState">No hay órdenes de compra que coincidan con la búsqueda.</div>
+    </div>
+  </main>
+</div>
+
+<!-- ============ MODAL: Nueva/Editar OC ============ -->
+<div class="modal-overlay hidden" id="ocModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="ocModalTitle">Nueva Orden de Compra</h2>
+      <button class="modal-close" id="ocModalClose">✕</button>
+    </div>
+    <form id="ocForm">
+      <div class="modal-body">
+        <input type="hidden" id="f_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Número de OC</label>
+            <input type="text" id="f_numero_oc" required inputmode="numeric">
+          </div>
+          <div class="field">
+            <label>Código</label>
+            <input type="text" id="f_codigo" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Descripción</label>
+          <input type="text" id="f_descripcion" required>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Cantidad total</label>
+            <input type="number" id="f_cantidad_total" min="0" step="0.01" required>
+          </div>
+          <div class="field">
+            <label>Unidad</label>
+            <select id="f_unidad" required>
+              <option value="Kg">Kg</option>
+              <option value="Mill">Mill</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Fecha de inicio</label>
+            <input type="date" id="f_fecha_inicio" required>
+          </div>
+          <div class="field">
+            <label>Fecha de entrega</label>
+            <input type="date" id="f_fecha_entrega" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Estado</label>
+            <select id="f_estado" required>
+              <option value="Inicio">Inicio</option>
+              <option value="En Producción">En Producción</option>
+              <option value="Por Entregar">Por Entregar</option>
+              <option value="Terminado">Terminado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Precio unitario (USD)</label>
+            <input type="number" id="f_precio_unitario" min="0" step="0.01" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Correo del proveedor</label>
+          <input type="email" id="f_email_proveedor" required placeholder="proveedor@ejemplo.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="ocModalCancel">Cancelar</button>
+        <button type="submit" class="btn btn-accent" id="ocModalSave">Guardar</button>
+      </div>
+    </form>
   </div>
 </div>
 
-<div class="scrim" id="scrim" data-act="close"></div>
-<aside class="drawer" id="drawer" aria-hidden="true" role="dialog" aria-label="Detalle del registro"></aside>
-<div class="modal" id="modal" role="dialog" aria-modal="true"><div class="mbox" id="mbox"></div></div>
-<div class="toasts" id="toasts" aria-live="polite"></div>
+<!-- ============ MODAL: Detalle (Proveedor) ============ -->
+<div class="modal-overlay hidden" id="detalleModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Detalle de OC</h2>
+      <button class="modal-close" id="detalleModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detalle-info" id="detalleInfo"></div>
+      <h3 class="subhead">Historial de entregas</h3>
+      <ul class="entregas-list hidden" id="entregasList"></ul>
+      <div class="entregas-empty hidden" id="entregasEmpty">Aún no se han registrado entregas.</div>
 
-<script>
-/* =====================================================================
-   CONFIGURACIÓN
-   Pega aquí la URL de tu Apps Script (termina en /exec). También se
-   puede configurar desde el botón "Ajustes" de la app.
-   ===================================================================== */
-const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbx31NiTM0QiFQydPAxJjczdRNTilFxfAkM08wUPwgAX9tkbgBNkhu72qwGq_5AmkOFd4A/exec',   // ← pega aquí la URL de tu Apps Script (termina en /exec)
-  CLAVE: '123'      // déjalo vacío: cada persona la escribe en Ajustes
-};
+      <h3 class="subhead">Reprogramar fecha de entrega</h3>
+      <form id="fechaForm">
+        <input type="hidden" id="ff_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Nueva fecha de entrega</label>
+            <input type="date" id="ff_nuevaFecha" required>
+          </div>
+          <div class="field field-btn">
+            <button type="submit" class="btn btn-outline btn-block" id="btnActualizarFecha">Actualizar fecha</button>
+          </div>
+        </div>
+      </form>
 
-/* ---------------- Datos de demostración (importados del Excel) -------- */
-const DEMO_DATA = /* sin datos: la información vive en Google Sheets */ {"Seguimiento":[],"Insumos":[],"Historial":[]};
-
-/* ---------------- Utilidades ---------------- */
-const $ = (s, el = document) => el.querySelector(s);
-const LS = {
-  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
-  del(k) { try { localStorage.removeItem(k); } catch {} }
-};
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const norm = s => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-const clone = o => JSON.parse(JSON.stringify(o));
-const pad = n => String(n).padStart(2, '0');
-const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
-const nowISO = () => { const d = new Date(); return `${todayISO()}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-function parseD(s) { if (!s) return null; const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)) : null; }
-function fmtD(s, withYear = true) { const d = parseD(s); if (!d) return '—'; return `${d.getDate()} ${MESES[d.getMonth()]}${withYear ? ' ' + d.getFullYear() : ''}`; }
-function daysFrom(s) { const d = parseD(s); if (!d) return null; const t = parseD(todayISO()); return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - t) / 864e5); }
-function fmtRel(s) {
-  const n = daysFrom(s); if (n === null) return '—';
-  if (n === 0) return 'hoy'; if (n === 1) return 'mañana'; if (n === -1) return 'ayer';
-  if (n > 0) return n < 60 ? `en ${n} días` : `en ${Math.round(n / 30)} meses`;
-  return -n < 60 ? `hace ${-n} días` : `hace ${Math.round(-n / 30)} meses`;
-}
-const fmtN = (v, dec = 1) => (v === '' || v == null || isNaN(v)) ? '—' : Number(v).toLocaleString('es-PE', { maximumFractionDigits: dec });
-
-/* ---------------- Dominio ---------------- */
-const PAIS_CODE = { 'PERÚ': 'PE', 'USA': 'US', 'COLOMBIA': 'CO', 'ECUADOR': 'EC', 'ESPAÑA': 'ES', 'ARGENTINA': 'AR', 'URUGUAY': 'UY', 'CHILE': 'CL', 'MÉXICO': 'MX', 'BOLIVIA': 'BO', 'GUATEMALA': 'GT', 'PANAMÁ': 'PA', 'COSTA RICA': 'CR', 'REP. DOMINICANA': 'DO' };
-const cc = p => PAIS_CODE[p] || String(p || '—').slice(0, 2).toUpperCase();
-const ST_TEXT = { ok: 'Aprobado', part: 'Aprobado parcial', prog: 'En proceso', obs: 'Observado', pend: 'Pendiente', none: 'Sin dato' };
-const ST_OPTS_ID = ['PENDIENTE', 'EN PROCESO', 'OBSERVADO', 'APROBADO PARCIALMENTE', 'APROBADO'];
-const ST_OPTS = ['PENDIENTE', 'EN PROCESO', 'OBSERVADO', 'APROBADO'];
-function stClass(v) {
-  v = String(v || '').toUpperCase().trim();
-  if (!v) return 'none';
-  if (v === 'APROBADO') return 'ok';
-  if (v.startsWith('APROBADO PARC')) return 'part';
-  if (v === 'OBSERVADO') return 'obs';
-  if (v === 'PENDIENTE' || v === 'SIN INICIO') return 'pend';
-  return 'prog';
-}
-const STAGES = [
-  { k: 'id', label: 'I+D', area: 'I+D' },
-  { k: 'reg', label: 'Regulatorio', area: 'REG' },
-  { k: 'art', label: 'Artes / diseño', area: 'REG' },
-  { k: 'sap', label: 'Carga SAP', area: 'I+D' },
-  { k: 'com', label: 'Compras', area: 'COMPRAS' },
-  { k: 'pcp', label: 'Producción', area: 'PCP' }
-];
-const DONE_STAGE = 6;
-function stagesOf(r) {
-  const t = todayISO(), out = [];
-  const add = (cls, text) => out.push({ cls, text: text || ST_TEXT[cls], done: cls === 'ok' || cls === 'part' });
-  add(stClass(r.STATUS_ID));
-  add(stClass(r.REGISTRO_REGULATORIO));
-  add(stClass(r.ARTES_DISENO));
-  const sap = String(r.CARGA_SAP_ALT ?? '') !== '' || !!r.FECHA_CARGA_SAP;
-  add(sap ? 'ok' : 'none', sap ? `Cargado${r.CARGA_SAP_ALT !== '' && r.CARGA_SAP_ALT != null ? ' · ALT ' + r.CARGA_SAP_ALT : ''}` : 'Sin carga');
-  const emb = r.FECHA_ING_EMBALAJES || r.FECHA_ING_MATERIALES;
-  add(!emb ? 'none' : emb <= t ? 'ok' : 'prog', !emb ? 'Sin fecha' : emb <= t ? 'Ingresado' : 'Programado');
-  const p = r.FECHA_INICIO_PRODUCCION;
-  add(!p ? 'none' : p <= t ? 'ok' : 'prog', !p ? 'Sin fecha' : p <= t ? 'Iniciada' : 'Programada');
-  return out.map((x, i) => Object.assign(x, STAGES[i]));
-}
-function curIdx(r) { const i = stagesOf(r).findIndex(s => !s.done); return i < 0 ? DONE_STAGE : i; }
-const stageName = i => i === DONE_STAGE ? 'Completo' : STAGES[i].label;
-
-function alertsOf(r) {
-  const s = stagesOf(r), out = [];
-  if (s.some(x => x.cls === 'obs')) out.push('obs');
-  if (s[0].done && s[1].done && !s[2].done) out.push('artes');
-  const emb = r.FECHA_ING_EMBALAJES, dd = daysFrom(emb);
-  if (emb && dd >= 0 && dd <= 45 && !s[2].done) out.push('riesgo');
-  return out;
-}
-function coverage(i) {
-  const c = Number(i.CONSUMO), fx = Number(i.STOCK_FX) || 0, pv = i.STOCK_PROVEEDOR === '' || i.STOCK_PROVEEDOR == null ? null : Number(i.STOCK_PROVEEDOR);
-  if (!c) return { v: null, noProv: pv === null };
-  return { v: (fx + (pv || 0)) / c, noProv: pv === null };
-}
-const covClass = v => v == null ? 'none' : v < 2 ? 'obs' : v < 4 ? 'part' : 'ok';
-const isCrit = i => { const c = coverage(i); return !c.noProv && c.v != null && c.v < 2; };
-const isLow = i => { const c = coverage(i); return !c.noProv && c.v != null && c.v >= 2 && c.v < 4; };
-
-/* Campos del formulario de seguimiento */
-const FIELDS = {
-  PRODUCTO: { label: 'Producto', type: 'text', full: true },
-  COD_GRANEL: { label: 'Código granel', type: 'text', ph: 'GR-00000-00' },
-  LINEA: { label: 'Línea', type: 'seg', options: ['Productos nuevos', 'Sabores naturales'], full: true },
-  PAIS: { label: 'País', type: 'pais' },
-  PRIORIDAD: { label: 'Prioridad (MKT)', type: 'seg', options: ['1', '2', '3', ''], names: { '': '—' } },
-  STATUS_ID: { label: 'Status I+D', type: 'status', options: ST_OPTS_ID, full: true },
-  FECHA_APROBACION: { label: 'Fecha de aprobación', type: 'date' },
-  DETALLE: { label: 'Detalle / comentarios', type: 'textarea', full: true },
-  REGISTRO_REGULATORIO: { label: 'Registro regulatorio', type: 'status', options: ST_OPTS, full: true },
-  ARTES_DISENO: { label: 'Artes / diseño', type: 'status', options: ST_OPTS, full: true },
-  FECHA_CARGA_ARTE: { label: 'Fecha de carga de arte', type: 'date' },
-  TAMBIEN_APLICA_A: { label: 'También aplica a', type: 'text', ph: 'Ej. EXCLUSIVO, CO, EC' },
-  CARGA_SAP_ALT: { label: 'Carga SAP (# ALT)', type: 'text', ph: 'N.º de alternativa' },
-  FECHA_CARGA_SAP: { label: 'Fecha de carga SAP', type: 'date' },
-  PROYECCION_AGOTAMIENTO: { label: 'Proyección de agotamiento (meses)', type: 'number', step: '0.1' },
-  LEAD_TIME: { label: 'Lead time insumos (días)', type: 'number', step: '1' },
-  FECHA_ING_MATERIALES: { label: 'Ingreso estimado de materiales', type: 'date' },
-  FECHA_ING_EMBALAJES: { label: 'Ingreso estimado de embalajes', type: 'date' },
-  FECHA_INICIO_PRODUCCION: { label: 'Inicio estimado de producción', type: 'date' }
-};
-const SECTIONS = [
-  { t: 'Datos generales', area: 'MKT', f: ['PRODUCTO', 'COD_GRANEL', 'PAIS', 'LINEA', 'PRIORIDAD'] },
-  { t: 'Investigación y desarrollo', area: 'I+D', f: ['STATUS_ID', 'FECHA_APROBACION', 'DETALLE'] },
-  { t: 'Regulatorio y artes', area: 'REG', f: ['REGISTRO_REGULATORIO', 'ARTES_DISENO', 'FECHA_CARGA_ARTE', 'TAMBIEN_APLICA_A'] },
-  { t: 'Carga en SAP', area: 'I+D', f: ['CARGA_SAP_ALT', 'FECHA_CARGA_SAP'] },
-  { t: 'Compras', area: 'COMPRAS', f: ['PROYECCION_AGOTAMIENTO', 'LEAD_TIME', 'FECHA_ING_MATERIALES', 'FECHA_ING_EMBALAJES'] },
-  { t: 'Planeamiento de producción', area: 'PCP', f: ['FECHA_INICIO_PRODUCCION'] }
-];
-const INS_FIELDS = {
-  INSUMO: { label: 'Insumo (descripción)', type: 'text', full: true },
-  COD_SAP: { label: 'Código SAP', type: 'text' },
-  COD_GRANEL: { label: 'Código granel', type: 'text' },
-  PRODUCTO: { label: 'Producto', type: 'text', full: true },
-  PAIS: { label: 'País', type: 'pais' },
-  STATUS: { label: 'Status', type: 'status', options: ST_OPTS_ID, full: true },
-  STOCK_FX: { label: 'Stock Fx (kg)', type: 'number', step: '0.001' },
-  STOCK_PROVEEDOR: { label: 'Stock proveedor (kg)', type: 'number', step: '0.001' },
-  CONSUMO: { label: 'Consumo mensual (kg)', type: 'number', step: '0.001' }
-};
-const LABELS = Object.assign({ '(registro)': 'Registro' }, ...Object.entries(Object.assign({}, FIELDS, INS_FIELDS)).map(([k, v]) => ({ [k]: v.label })));
-
-/* ---------------- Estado ---------------- */
-let cfg = Object.assign({}, CONFIG, LS.get('ca_cfg', {}));
-const FIXED_URL = !!CONFIG.API_URL;          // URL fija de la empresa: siempre se usa esa
-if (FIXED_URL) cfg.API_URL = CONFIG.API_URL;
-const state = {
-  data: { Seguimiento: [], Insumos: [], Historial: [] },
-  view: 'panel', loaded: false, hojaUrl: '', lastLoad: 0,
-  f: { linea: '', pais: '', etapa: '', prio: '', alert: false, q: '' },
-  sort: { k: 'cur', d: 1 },
-  inf: { pais: '', crit: false, sort: 'cov', d: 1 },
-  drawer: null, draft: null
-};
-const live = () => !!cfg.API_URL;
-
-/* ---------------- API ---------------- */
-const api = {
-  async load() {
-    if (!live()) return LS.get('ca_demo_v1', null) || clone(DEMO_DATA);
-    const url = cfg.API_URL + (cfg.API_URL.includes('?') ? '&' : '?') + 'action=all&key=' + encodeURIComponent(cfg.CLAVE || '') + '&t=' + Date.now();
-    const r = await fetch(url, { redirect: 'follow' });
-    if (!r.ok) throw new Error('El servidor respondió ' + r.status);
-    const j = await r.json();
-    if (j.error) throw new Error(j.error);
-    return j;
-  },
-  async send(p) {
-    p = Object.assign({}, p, { user: cfg.USER || 'Sin nombre', key: cfg.CLAVE || '' });
-    if (!live()) return demoApply(p);
-    const r = await fetch(cfg.API_URL, { method: 'POST', body: JSON.stringify(p), redirect: 'follow' });
-    const j = await r.json();
-    if (j.error) throw new Error(j.error);
-    return j;
-  }
-};
-function demoApply(p) {
-  const db = LS.get('ca_demo_v1', null) || clone(DEMO_DATA);
-  const list = db[p.sheet], now = nowISO(), logs = [];
-  const log = (id, prod, pais, campo, antes, despues) => logs.push({ FECHA: now, HOJA: p.sheet, REGISTRO_ID: id, PRODUCTO: prod, PAIS: pais, CAMPO: campo, ANTES: antes, DESPUES: despues, USUARIO: p.user });
-  let record = null;
-  if (p.action === 'create') {
-    const pre = p.sheet === 'Seguimiento' ? 'R-' : 'I-';
-    const max = list.reduce((m, x) => Math.max(m, parseInt(String(x.ID).replace(/\D/g, '')) || 0), 0);
-    record = Object.assign({}, p.data, { ID: pre + String(max + 1).padStart(4, '0'), ACTUALIZADO: now, ACTUALIZADO_POR: p.user });
-    list.push(record); log(record.ID, record.PRODUCTO || record.INSUMO, record.PAIS, '(registro)', '', 'Creado');
-  } else if (p.action === 'update') {
-    record = list.find(x => x.ID === p.id); if (!record) throw new Error('Registro no encontrado');
-    Object.entries(p.data).forEach(([k, v]) => { const a = record[k] ?? ''; if (String(a) !== String(v ?? '')) { log(p.id, record.PRODUCTO || record.INSUMO, record.PAIS, k, a, v); record[k] = v; } });
-    if (logs.length) { record.ACTUALIZADO = now; record.ACTUALIZADO_POR = p.user; }
-  } else if (p.action === 'delete') {
-    const i = list.findIndex(x => x.ID === p.id); if (i < 0) throw new Error('Registro no encontrado');
-    const [x] = list.splice(i, 1); log(p.id, x.PRODUCTO || x.INSUMO, x.PAIS, '(registro)', '', 'Eliminado');
-  }
-  db.Historial = logs.slice().reverse().concat(db.Historial || []).slice(0, 600);
-  LS.set('ca_demo_v1', db);
-  return { ok: true, record: record && clone(record), logs };
-}
-function normalizeData(d) {
-  const S = ['STATUS_ID', 'REGISTRO_REGULATORIO', 'ARTES_DISENO', 'STATUS'];
-  ['Seguimiento', 'Insumos'].forEach(n => (d[n] || []).forEach(r => {
-    Object.keys(r).forEach(k => { if (r[k] == null) r[k] = ''; });
-    S.forEach(k => { if (k in r) r[k] = String(r[k]).toUpperCase().trim(); });
-    if ('PRIORIDAD' in r) r.PRIORIDAD = String(r.PRIORIDAD);
-    if ('CARGA_SAP_ALT' in r) r.CARGA_SAP_ALT = String(r.CARGA_SAP_ALT);
-  }));
-  d.Historial = d.Historial || [];
-  return d;
-}
-
-async function loadAll(silent) {
-  try {
-    const d = normalizeData(await api.load());
-    state.data = { Seguimiento: d.Seguimiento || [], Insumos: d.Insumos || [], Historial: d.Historial || [] };
-    state.hojaUrl = d.hojaUrl || ''; state.loaded = true; state.lastLoad = Date.now(); state.err = '';
-    if (!silent) toast(live() ? 'Datos actualizados desde Google Sheets' : 'Datos de demostración cargados');
-  } catch (e) {
-    state.err = e.message || String(e); state.loaded = true;
-    toast('No se pudo conectar: ' + state.err, 'err');
-    if (/clave/i.test(state.err)) setTimeout(openSettings, 400);
-  }
-  render();
-}
-
-/* ---------------- Render principal ---------------- */
-const VIEWS = {
-  panel: { t: 'Panel', icon: '<path d="M3 3h8v10H3zM13 3h8v6h-8zM13 11h8v10h-8zM3 15h8v6H3z"/>' },
-  seguimiento: { t: 'Seguimiento', icon: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>' },
-  tablero: { t: 'Tablero', icon: '<path d="M3 4h5v16H3zM10 4h5v10h-5zM17 4h4v13h-4z"/>' },
-  insumos: { t: 'Insumos', icon: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>' },
-  historial: { t: 'Historial', icon: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>' }
-};
-function render() {
-  const v = state.view;
-  document.title = VIEWS[v].t + ' · Control de Artes · Fuxion Biotech';
-  $('#title').textContent = VIEWS[v].t;
-  $('#subtitle').textContent = { panel: 'Resumen del avance por etapa y país', seguimiento: 'Todos los registros y su etapa actual', tablero: 'Registros agrupados por la etapa en la que están', insumos: 'Cobertura de sabores e insumos', historial: 'Quién cambió qué y cuándo' }[v];
-  const counts = { seguimiento: state.data.Seguimiento.length, insumos: state.data.Insumos.length };
-  $('#nav').innerHTML = Object.entries(VIEWS).map(([k, x]) => `<a href="#${k}" class="${k === v ? 'on' : ''}" ${k === v ? 'aria-current="page"' : ''}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">${x.icon}</svg>${x.t}${counts[k] != null ? `<span class="n">${counts[k]}</span>` : ''}</a>`).join('');
-  $('#conn').className = 'conn' + (live() && !state.err ? ' live' : '');
-  $('#conn').innerHTML = live()
-    ? (state.err ? `<span class="dot" style="background:var(--obs)"></span><div><b>Sin conexión</b>${esc(state.err)}</div>` : `<span class="dot"></span><div><b>Google Sheets</b>${state.hojaUrl ? `<a href="${esc(state.hojaUrl)}" target="_blank" rel="noopener" style="color:inherit">Abrir hoja</a>` : 'Conectado'} · ${esc(cfg.USER || 'Sin nombre')}</div>`)
-    : `<span class="dot"></span><div><b>Modo demostración</b>Los cambios se guardan solo en este navegador</div>`;
-  if (!state.loaded) return;
-  const el = $('#view');
-  el.innerHTML = ({ panel: viewPanel, seguimiento: viewList, tablero: viewBoard, insumos: viewInsumos, historial: viewHist })[v]();
-}
-const demoBanner = () => live() ? '' : `<div class="banner"><div><b>Estás viendo datos de demostración.</b> Conecta tu Google Sheets para que todo el equipo trabaje sobre la misma información.</div><button class="btn sm" data-act="settings">Conectar Google Sheets</button></div>`;
-
-/* ---------------- Vista: Panel ---------------- */
-function viewPanel() {
-  const rows = state.data.Seguimiento.filter(r => !state.f.linea || r.LINEA === state.f.linea);
-  const total = rows.length || 1;
-  const st = rows.map(stagesOf), cur = rows.map(curIdx);
-  const order = ['ok', 'part', 'prog', 'obs', 'pend', 'none'];
-  const tira = STAGES.map((s, i) => {
-    const c = {}; order.forEach(o => c[o] = 0);
-    st.forEach(x => c[x[i].cls]++);
-    const done = c.ok + c.part, here = cur.filter(x => x === i).length;
-    return `<div class="tira-row">
-      <div class="lbl">${s.label}</div>
-      <div class="stack" role="img" aria-label="${s.label}: ${order.map(o => `${c[o]} ${ST_TEXT[o]}`).join(', ')}">${order.filter(o => c[o]).map(o => `<i class="st-${o}" style="flex-grow:${c[o]}" title="${ST_TEXT[o]}: ${c[o]}"></i>`).join('')}</div>
-      <div class="pct">${Math.round(done / total * 100)}%</div>
-      <button class="here" data-act="goStage" data-i="${i}">${here} aquí ahora</button>
-    </div>`;
-  }).join('');
-  const completos = cur.filter(x => x === DONE_STAGE).length;
-  const artesPend = rows.filter(r => alertsOf(r).includes('artes')).length;
-  const obs = rows.filter(r => alertsOf(r).includes('obs')).length;
-  const crit = state.data.Insumos.filter(isCrit).length;
-
-  // País
-  const paises = [...new Set(rows.map(r => r.PAIS))].sort((a, b) => rows.filter(r => r.PAIS === b).length - rows.filter(r => r.PAIS === a).length);
-  const mini = v => `<div class="mini"><span class="t"><i style="width:${Math.round(v * 100)}%"></i></span><b>${Math.round(v * 100)}%</b></div>`;
-  const ptab = paises.map(p => {
-    const pr = rows.filter(r => r.PAIS === p), n = pr.length, s = pr.map(stagesOf);
-    const rate = i => s.filter(x => x[i].done).length / n;
-    return `<tr data-act="goPais" data-p="${esc(p)}"><td class="p"><span class="cc">${cc(p)}</span> ${esc(p)}</td><td>${n}</td><td>${mini(rate(0))}</td><td>${mini(rate(1))}</td><td>${mini(rate(2))}</td></tr>`;
-  }).join('');
-
-  // Alertas
-  const groups = [
-    { k: 'artes', cls: 'prog', t: 'Listos para artes', d: 'I+D y Regulatorio aprobados, pero el arte todavía no está aprobado.' },
-    { k: 'riesgo', cls: 'part', t: 'Embalajes por ingresar sin arte aprobado', d: 'El ingreso de embalajes es en los próximos 45 días.' },
-    { k: 'obs', cls: 'obs', t: 'Con observaciones', d: 'Alguna etapa está observada y necesita respuesta.' }
-  ].map(g => ({ ...g, items: rows.filter(r => alertsOf(r).includes(g.k)) })).filter(g => g.items.length);
-  const alerts = groups.length ? groups.map(g => `<div class="alert st-${g.cls}"><div class="alert-h"><b>${g.t}</b><span class="c">${g.items.length}</span></div><p>${g.d}</p><div class="chips">${g.items.slice(0, 8).map(r => `<button class="chip" data-act="open" data-id="${r.ID}">${esc(r.PRODUCTO)} · ${cc(r.PAIS)}</button>`).join('')}${g.items.length > 8 ? `<button class="chip" data-act="goAlert">+${g.items.length - 8} más</button>` : ''}</div></div>`).join('')
-    : `<div class="empty"><b>Nada pendiente de atención</b>No hay registros observados ni artes atrasados.</div>`;
-
-  // Próximas fechas
-  const EV = { FECHA_ING_MATERIALES: 'Ingreso de materiales', FECHA_ING_EMBALAJES: 'Ingreso de embalajes', FECHA_INICIO_PRODUCCION: 'Inicio de producción', FECHA_CARGA_SAP: 'Carga SAP', FECHA_CARGA_ARTE: 'Carga de arte' };
-  const t = todayISO(), evs = [];
-  rows.forEach(r => Object.keys(EV).forEach(k => { if (r[k] && r[k] >= t) evs.push({ r, k, d: r[k] }); }));
-  evs.sort((a, b) => a.d.localeCompare(b.d));
-  const evHTML = evs.length ? evs.slice(0, 7).map(e => { const d = parseD(e.d); return `<div class="ev" data-act="open" data-id="${e.r.ID}"><div class="d"><b>${d.getDate()}</b><span>${MESES[d.getMonth()]} ${String(d.getFullYear()).slice(2)}</span></div><div class="w">${esc(e.r.PRODUCTO)} <span class="cc">${cc(e.r.PAIS)}</span><small>${EV[e.k]}</small></div><div class="rel">${fmtRel(e.d)}</div></div>`; }).join('')
-    : `<div class="empty"><b>Sin fechas programadas hacia adelante</b>Registra las fechas estimadas de Compras y PCP en cada producto.</div>`;
-
-  // Insumos críticos
-  const ins = state.data.Insumos.map(i => ({ i, c: coverage(i) })).filter(x => x.c.v != null && !x.c.noProv).sort((a, b) => a.c.v - b.c.v).slice(0, 6);
-  const insHTML = ins.length ? `<table class="ctab"><thead><tr><th>Insumo</th><th>País</th><th>Cobertura</th></tr></thead><tbody>${ins.map(({ i, c }) => `<tr data-act="openIns" data-id="${i.ID}"><td><span style="font-weight:560">${esc(i.INSUMO)}</span><span class="tag" style="display:block">${esc(i.PRODUCTO)}</span></td><td><span class="cc">${cc(i.PAIS)}</span></td><td>${covBar(c)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Sin datos de insumos.</div>`;
-
-  return `${demoBanner()}
-  <div class="bar-row">
-    <div class="seg-ctl" role="group" aria-label="Línea">${['', 'Productos nuevos', 'Sabores naturales'].map(l => `<button class="${state.f.linea === l ? 'on' : ''}" data-act="linea" data-v="${l}">${l || 'Todas las líneas'}</button>`).join('')}</div>
-  </div>
-  <div class="kpis" style="margin-bottom:18px">
-    <button class="kpi" data-act="goAll"><b>${rows.length}</b><span>Registros en seguimiento</span></button>
-    <button class="kpi" data-act="goStage" data-i="2"><b>${cur.filter(x => x === 2).length}</b><span>Esperando arte aprobado</span></button>
-    <button class="kpi" data-act="goStage" data-i="${DONE_STAGE}"><b>${completos}</b><span>Completos hasta producción</span></button>
-    <button class="kpi ${obs ? 'warn' : ''}" data-act="goAlert"><b>${obs + artesPend}</b><span>Requieren atención</span></button>
-    <a class="kpi ${crit ? 'warn' : ''}" href="#insumos" style="color:inherit;text-decoration:none"><b>${crit}</b><span>Insumos con menos de 2 meses</span></a>
-  </div>
-  <div class="card" style="margin-bottom:18px">
-    <div class="card-h"><h2>Avance por etapa</h2><span class="hint">Cada barra es una etapa. El color muestra en qué estado está cada registro.</span></div>
-    <div class="card-b">
-      <div class="tira">${tira}</div>
-      <div class="tira-marks"><div class="legend">${order.map(o => `<span><i class="st-${o}"></i>${ST_TEXT[o]}</span>`).join('')}</div></div>
+      <h3 class="subhead">Registrar nueva entrega</h3>
+      <form id="entregaForm">
+        <input type="hidden" id="e_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Fecha de entrega</label>
+            <input type="date" id="e_fecha" required>
+          </div>
+          <div class="field">
+            <label>Cantidad</label>
+            <input type="number" id="e_cantidad" min="0.01" step="0.01" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" id="btnRegistrarEntrega">Registrar entrega</button>
+      </form>
     </div>
   </div>
-  <div class="grid g-2" style="margin-bottom:18px">
-    <div class="card"><div class="card-h"><h2>Avance por país</h2><span class="hint">% aprobado por área</span></div><div class="card-b" style="overflow-x:auto"><table class="ctab"><thead><tr><th>País</th><th>Registros</th><th>I+D</th><th>Regulatorio</th><th>Artes</th></tr></thead><tbody>${ptab}</tbody></table></div></div>
-    <div class="card"><div class="card-h"><h2>Requiere atención</h2></div><div class="card-b"><div class="alerts">${alerts}</div></div></div>
+</div>
+
+<!-- ============ MODAL: Dashboard general (Admin) ============ -->
+<div class="modal-overlay hidden" id="dashboardModalOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>Dashboard general</h2>
+      <button class="modal-close" id="dashboardModalClose">✕</button>
+    </div>
+    <div class="modal-body" id="dashboardBody"></div>
   </div>
-  <div class="grid g-2b">
-    <div class="card"><div class="card-h"><h2>Próximas fechas</h2><span class="hint">Materiales, embalajes y producción</span></div><div class="card-b">${evHTML}</div></div>
-    <div class="card"><div class="card-h"><h2>Insumos con menor cobertura</h2><a class="right btn sm ghost" href="#insumos">Ver todos</a></div><div class="card-b">${insHTML}</div></div>
-  </div>`;
-}
-function covBar(c) {
-  if (c.v == null) return `<span class="nd">Sin consumo</span>`;
-  const k = c.noProv ? 'none' : covClass(c.v), w = Math.min(100, c.v / 8 * 100);
-  return `<div class="cov st-${k}" title="${c.noProv ? 'Sin dato de stock en proveedor: solo stock Fx' : 'Stock Fx + proveedor / consumo'}"><span class="t"><i style="width:${w}%"></i></span><b>${fmtN(c.v)}${c.noProv ? '*' : ''}</b></div>`;
-  /* * = solo stock Fx: falta el dato del proveedor, no se cuenta como crítico */
+</div>
+
+<script>
+/* =========================================================
+   CONFIGURACIÓN
+   Pega aquí la URL de tu Apps Script publicado como Web App
+   (Implementar > Nueva implementación > Aplicación web)
+========================================================= */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyilJ7ByZSBgVZeLBwAZiPT46UnQlXytq-6AR9-VhIeFBoF6uBR1K1zTYkExkR37am7Xw/exec';
+
+let currentUser = null;
+let allOcs = [];
+let currentFilter = 'Todos';
+let searchTerm = '';
+
+const ESTADOS = ['Inicio', 'En Producción', 'Por Entregar', 'Terminado'];
+const ESTADO_CLASS = {
+  'Inicio': 'est-inicio',
+  'En Producción': 'est-produccion',
+  'Por Entregar': 'est-entregar',
+  'Terminado': 'est-terminado'
+};
+
+/* ---------------- API ---------------- */
+async function apiCall(action, params = {}) {
+  const fd = new FormData();
+  fd.append('action', action);
+  Object.entries(params).forEach(([k, v]) => fd.append(k, v === undefined || v === null ? '' : v));
+  const res = await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow' });
+  if (!res.ok) throw new Error('Error de red: ' + res.status);
+  return res.json();
 }
 
-/* ---------------- Filtros ---------------- */
-function filtered() {
-  const f = state.f, q = norm(f.q);
-  return state.data.Seguimiento.filter(r =>
-    (!f.linea || r.LINEA === f.linea) && (!f.pais || r.PAIS === f.pais) &&
-    (f.etapa === '' || curIdx(r) === +f.etapa) && (!f.prio || String(r.PRIORIDAD) === f.prio) &&
-    (!f.alert || alertsOf(r).length) &&
-    (!q || norm([r.PRODUCTO, r.COD_GRANEL, r.PAIS, r.DETALLE, r.TAMBIEN_APLICA_A, r.ID].join(' ')).includes(q)));
+/* ---------------- Sesión ---------------- */
+function saveSession(user) {
+  localStorage.setItem('oc_session', JSON.stringify(user));
 }
-function filtersHTML(withStage = true) {
-  const f = state.f, base = state.data.Seguimiento.filter(r => !f.linea || r.LINEA === f.linea);
-  const paises = [...new Set(state.data.Seguimiento.map(r => r.PAIS))].sort();
-  return `<div class="filters">
-    <div class="seg-ctl" role="group" aria-label="Línea">${['', 'Productos nuevos', 'Sabores naturales'].map(l => `<button class="${f.linea === l ? 'on' : ''}" data-act="linea" data-v="${l}">${l || 'Todas'}</button>`).join('')}</div>
-    ${withStage ? `<select class="sel" data-filter="etapa" aria-label="Etapa actual"><option value="">Cualquier etapa</option>${STAGES.map((s, i) => `<option value="${i}" ${f.etapa === String(i) ? 'selected' : ''}>En ${s.label}</option>`).join('')}<option value="${DONE_STAGE}" ${f.etapa === String(DONE_STAGE) ? 'selected' : ''}>Completos</option></select>` : ''}
-    <select class="sel" data-filter="prio" aria-label="Prioridad"><option value="">Toda prioridad</option>${['1', '2', '3'].map(p => `<option value="${p}" ${f.prio === p ? 'selected' : ''}>Prioridad ${p}</option>`).join('')}</select>
-    <label class="toggle"><input type="checkbox" data-filter="alert" ${f.alert ? 'checked' : ''}> Solo los que requieren atención</label>
-    ${(f.pais || f.etapa !== '' || f.prio || f.alert || f.q) ? `<button class="btn sm ghost" data-act="clearF">Limpiar filtros</button>` : ''}
-    <span class="count" id="fcount"></span>
-  </div>
-  <div class="pchips" role="group" aria-label="País"><button class="${!f.pais ? 'on' : ''}" data-act="pais" data-v="">Todos<span>${base.length}</span></button>${paises.map(p => `<button class="${f.pais === p ? 'on' : ''}" data-act="pais" data-v="${esc(p)}">${esc(p)}<span>${base.filter(r => r.PAIS === p).length}</span></button>`).join('')}</div>`;
-}
-
-/* ---------------- Vista: Seguimiento ---------------- */
-function stripHTML(r) {
-  const s = stagesOf(r), c = curIdx(r);
-  return `<div class="strip" role="img" aria-label="${s.map(x => `${x.label}: ${x.text}`).join('; ')}">${s.map((x, i) => `<span class="sg st-${x.cls} ${i === c ? 'cur' : ''}" title="${x.label}: ${esc(x.text)}"></span>`).join('')}</div>`;
-}
-function viewList() {
-  const rows = filtered(), S = state.sort;
-  const key = {
-    prod: r => norm(r.PRODUCTO), pais: r => r.PAIS, prio: r => r.PRIORIDAD || '9', cur: r => curIdx(r) * 10 + (r.PRIORIDAD || 9) / 10,
-    art: r => ['obs', 'pend', 'none', 'prog', 'part', 'ok'].indexOf(stClass(r.ARTES_DISENO)), upd: r => r.ACTUALIZADO || ''
-  }[S.k] || (r => 0);
-  rows.sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * S.d; });
-  const th = (k, t) => `<button data-act="sort" data-k="${k}" class="${S.k === k ? 'on' : ''}">${t}${S.k === k ? (S.d > 0 ? ' ↑' : ' ↓') : ''}</button>`;
-  const body = rows.map(r => {
-    const c = curIdx(r), s = stagesOf(r), a = alertsOf(r);
-    const cs = c === DONE_STAGE ? { cls: 'ok', text: 'Todas las etapas listas' } : s[c];
-    return `<div class="lrow" data-act="open" data-id="${r.ID}" tabindex="0" role="button">
-      <div class="pname c-n"><b>${esc(r.PRODUCTO)}</b><small>${esc(r.COD_GRANEL || 'Sin código granel')} · ${esc(r.LINEA)}</small></div>
-      <div class="c-pais"><span class="cc" title="${esc(r.PAIS)}">${cc(r.PAIS)}</span></div>
-      <div class="c-pr"><span class="prio ${r.PRIORIDAD === '1' ? 'p1' : ''}">${r.PRIORIDAD ? 'P' + r.PRIORIDAD : '—'}</span></div>
-      <div class="c-s">${stripHTML(r)}</div>
-      <div class="curst c-cur">${stageName(c)}${a.includes('obs') ? ' <span class="pill st-obs">Observado</span>' : ''}<small>${esc(cs.text)}</small></div>
-      <div class="c-art"><span class="pill st-${stClass(r.ARTES_DISENO)}">${r.ARTES_DISENO ? ST_TEXT[stClass(r.ARTES_DISENO)] : 'Sin dato'}</span>${r.FECHA_CARGA_ARTE ? `<div class="tag">Cargado ${fmtD(r.FECHA_CARGA_ARTE)}</div>` : ''}</div>
-      <div class="upd c-upd" title="${esc(r.ACTUALIZADO_POR || '')}">${fmtRel(r.ACTUALIZADO)}</div>
-    </div>`;
-  }).join('');
-  setTimeout(() => { const c = $('#fcount'); if (c) c.textContent = `${rows.length} de ${state.data.Seguimiento.length} registros`; });
-  return `${demoBanner()}${filtersHTML()}
-  <div class="list">
-    <div class="lrow lhead"><div>${th('prod', 'Producto')}</div><div>${th('pais', 'País')}</div><div>${th('prio', 'Prior.')}</div><div title="I+D, Regulatorio, Artes, Carga SAP, Compras, Producción">Etapas</div><div>${th('cur', 'Etapa actual')}</div><div class="c-art">${th('art', 'Artes')}</div><div>${th('upd', 'Actualizado')}</div></div>
-    <div class="lbody">${body || `<div class="empty"><b>No hay registros con estos filtros</b><button class="btn sm" data-act="clearF" style="margin-top:8px">Limpiar filtros</button></div>`}</div>
-  </div>
-  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end"><button class="btn sm" data-act="csv">Descargar CSV</button></div>`;
-}
-
-/* ---------------- Vista: Tablero ---------------- */
-function viewBoard() {
-  const rows = filtered();
-  const cols = [...STAGES.map((s, i) => ({ i, t: s.label, a: s.area })), { i: DONE_STAGE, t: 'Completo', a: 'Listo' }];
-  const colCls = i => i === DONE_STAGE ? 'ok' : i === 2 ? 'prog' : 'pend';
-  setTimeout(() => { const c = $('#fcount'); if (c) c.textContent = `${rows.length} registros`; });
-  return `${demoBanner()}${filtersHTML(false)}<div class="board">${cols.map(c => {
-    const items = rows.filter(r => curIdx(r) === c.i).sort((a, b) => (a.PRIORIDAD || '9').localeCompare(b.PRIORIDAD || '9'));
-    return `<section class="col"><div class="col-h st-${colCls(c.i)}" style="border-top-color:var(--s)"><div><b>${c.t}</b><small>${c.a}</small></div><span>${items.length}</span></div>
-    <div class="col-b">${items.map(r => {
-      const s = stagesOf(r)[c.i];
-      return `<button class="kc" data-act="open" data-id="${r.ID}"><div class="t"><b>${esc(r.PRODUCTO)}</b><span class="cc">${cc(r.PAIS)}</span></div>${stripHTML(r)}<div class="f">${s ? `<span class="pill st-${s.cls}">${esc(s.text)}</span>` : '<span class="pill st-ok">Listo</span>'}${r.PRIORIDAD ? `<span class="prio ${r.PRIORIDAD === '1' ? 'p1' : ''}">P${r.PRIORIDAD}</span>` : ''}<span class="upd">${fmtRel(r.ACTUALIZADO)}</span></div></button>`;
-    }).join('') || '<div class="empty" style="padding:14px 4px">Ninguno</div>'}</div></section>`;
-  }).join('')}</div>`;
-}
-
-/* ---------------- Vista: Insumos ---------------- */
-function viewInsumos() {
-  const F = state.inf, q = norm(state.f.q);
-  const all = state.data.Insumos;
-  let rows = all.map(i => ({ i, c: coverage(i) })).filter(({ i, c }) =>
-    (!F.pais || i.PAIS === F.pais) && (!F.crit || isCrit(i)) &&
-    (!q || norm([i.INSUMO, i.PRODUCTO, i.COD_GRANEL, i.COD_SAP, i.PAIS].join(' ')).includes(q)));
-  const key = { cov: x => x.c.v == null ? 9999 : x.c.noProv ? 1000 + x.c.v : x.c.v, ins: x => norm(x.i.INSUMO), prod: x => norm(x.i.PRODUCTO), fx: x => +x.i.STOCK_FX || 0, cons: x => +x.i.CONSUMO || 0 }[F.sort];
-  rows.sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * F.d; });
-  const paises = [...new Set(all.map(i => i.PAIS))].sort();
-  const crit = all.filter(isCrit).length;
-  const low = all.filter(isLow).length;
-  const noProv = all.filter(i => coverage(i).noProv).length;
-  const th = (k, t, n) => `<th class="${n ? 'n' : ''}"><button data-act="isort" data-k="${k}">${t}${F.sort === k ? (F.d > 0 ? ' ↑' : ' ↓') : ''}</button></th>`;
-  return `${demoBanner()}
-  <div class="kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
-    <div class="kpi"><b>${all.length}</b><span>Insumos registrados</span></div>
-    <button class="kpi ${crit ? 'warn' : ''}" data-act="icrit"><b>${crit}</b><span>Menos de 2 meses de cobertura</span></button>
-    <div class="kpi"><b>${low}</b><span>Entre 2 y 4 meses</span></div>
-    <div class="kpi"><b>${noProv}</b><span>Sin dato de stock en proveedor</span></div>
-  </div>
-  <div class="filters">
-    <select class="sel" data-ifilter="pais" aria-label="País"><option value="">Todos los países</option>${paises.map(p => `<option ${F.pais === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</select>
-    <label class="toggle"><input type="checkbox" data-ifilter="crit" ${F.crit ? 'checked' : ''}> Solo críticos</label>
-    <span class="count">${rows.length} insumos · * sin dato de proveedor: cobertura solo con stock Fx, en gris</span>
-    <button class="btn sm" data-act="newIns">Agregar insumo</button>
-  </div>
-  <div class="list tscroll"><table class="itab"><thead><tr>${th('ins', 'Insumo')}${th('prod', 'Producto / granel')}<th>País</th>${th('fx', 'Stock Fx', 1)}<th class="n">Stock proveedor</th>${th('cons', 'Consumo / mes', 1)}${th('cov', 'Cobertura (meses)')}</tr></thead>
-  <tbody>${rows.map(({ i, c }) => `<tr data-act="openIns" data-id="${i.ID}"><td><span style="font-weight:560">${esc(i.INSUMO)}</span><span class="sub">SAP ${esc(i.COD_SAP)}</span></td><td>${esc(i.PRODUCTO)}<span class="sub">${esc(i.COD_GRANEL)}${i.STATUS ? ' · ' + ST_TEXT[stClass(i.STATUS)] : ''}</span></td><td><span class="cc">${cc(i.PAIS)}</span></td><td class="n">${fmtN(i.STOCK_FX, 2)}</td><td class="n">${i.STOCK_PROVEEDOR === '' ? '<span class="nd">Sin dato</span>' : fmtN(i.STOCK_PROVEEDOR, 2)}</td><td class="n">${fmtN(i.CONSUMO, 2)}</td><td>${covBar(c)}</td></tr>`).join('') || `<tr><td colspan="7"><div class="empty">No hay insumos con estos filtros.</div></td></tr>`}</tbody></table></div>`;
-}
-
-/* ---------------- Vista: Historial ---------------- */
-function histChange(h) {
-  if (h.CAMPO === '(registro)') return `<span class="pill st-${h.DESPUES === 'Eliminado' ? 'obs' : 'ok'}">${esc(h.DESPUES)}</span>`;
-  const isSt = /STATUS|REGISTRO_REG|ARTES/.test(h.CAMPO);
-  const v = x => x === '' || x == null ? '<span class="nd">vacío</span>' : isSt ? `<span class="pill st-${stClass(x)}">${ST_TEXT[stClass(x)]}</span>` : /^FECHA/.test(h.CAMPO) ? esc(fmtD(x)) : esc(x);
-  return `<span>${esc(LABELS[h.CAMPO] || h.CAMPO)}:</span> ${isSt ? v(h.ANTES) : `<s>${v(h.ANTES)}</s>`}<span class="arrow">→</span> ${v(h.DESPUES)}`;
-}
-function viewHist() {
-  const q = norm(state.f.q);
-  const H = state.data.Historial.filter(h => !q || norm([h.PRODUCTO, h.USUARIO, h.CAMPO, h.DESPUES, h.PAIS].join(' ')).includes(q));
-  if (!H.length) return `${demoBanner()}<div class="card"><div class="empty" style="padding:50px 10px"><b>Todavía no hay cambios registrados</b>Cada vez que alguien actualice un status o una fecha, quedará anotado aquí con su nombre.</div></div>`;
-  let day = '', out = '';
-  H.slice(0, 400).forEach(h => {
-    const d = (h.FECHA || '').slice(0, 10);
-    if (d !== day) { if (day) out += '</div>'; day = d; out += `<div class="hday">${daysFrom(d) === 0 ? 'Hoy' : daysFrom(d) === -1 ? 'Ayer' : fmtD(d)}</div><div class="list">`; }
-    out += `<div class="hitem"><time>${(h.FECHA || '').slice(11, 16)}</time><div><div class="what"><button data-act="${h.HOJA === 'Insumos' ? 'openIns' : 'open'}" data-id="${esc(h.REGISTRO_ID)}">${esc(h.PRODUCTO || h.REGISTRO_ID)}</button> <span class="cc">${cc(h.PAIS)}</span> <span class="who">por ${esc(h.USUARIO || 'Sin nombre')}</span></div><div class="chg">${histChange(h)}</div></div></div>`;
-  });
-  return demoBanner() + out + '</div>';
-}
-
-/* ---------------- Formulario ---------------- */
-function fieldHTML(k, F, d, orig) {
-  const f = F[k], v = d[k] ?? '', ch = orig && String(orig[k] ?? '') !== String(v) ? ' changed' : '';
-  const full = f.full || f.type === 'status' || f.type === 'textarea' ? ' full' : '';
-  const lab = `<label for="f_${k}">${f.label}</label>`;
-  switch (f.type) {
-    case 'status': return `<div class="fld${full}${ch}"><label>${f.label}</label><div class="stbtns" role="radiogroup" aria-label="${f.label}">${f.options.map(o => `<button type="button" class="stbtn st-${stClass(o)} ${v === o ? 'on' : ''}" role="radio" aria-checked="${v === o}" data-act="setv" data-k="${k}" data-v="${o}"><i></i>${ST_TEXT[stClass(o)]}</button>`).join('')}</div></div>`;
-    case 'seg': return `<div class="fld${full}${ch}"><label>${f.label}</label><div class="segf" role="radiogroup">${f.options.map(o => `<button type="button" class="${String(v) === o ? 'on' : ''}" role="radio" aria-checked="${String(v) === o}" data-act="setv" data-k="${k}" data-v="${esc(o)}">${esc((f.names && f.names[o]) ?? o)}</button>`).join('')}</div></div>`;
-    case 'textarea': return `<div class="fld${full}${ch}">${lab}<textarea class="inp" id="f_${k}" data-k="${k}" rows="3">${esc(v)}</textarea></div>`;
-    case 'pais': return `<div class="fld${full}${ch}">${lab}<input class="inp" id="f_${k}" data-k="${k}" list="dl_pais" value="${esc(v)}" autocomplete="off"><datalist id="dl_pais">${Object.keys(PAIS_CODE).map(p => `<option value="${p}">`).join('')}</datalist></div>`;
-    default: return `<div class="fld${full}${ch}">${lab}<input class="inp" id="f_${k}" data-k="${k}" type="${f.type}" ${f.step ? `step="${f.step}"` : ''} value="${esc(v)}" placeholder="${esc(f.ph || '')}"></div>`;
-  }
-}
-
-/* ---------------- Drawer de registro ---------------- */
-function openDrawer(id) {
-  const r = id ? state.data.Seguimiento.find(x => x.ID === id) : null;
-  if (id && !r) { toast('Ese registro ya no existe', 'err'); return; }
-  state.drawer = { id: id || null, sheet: 'Seguimiento' };
-  state.draft = r ? clone(r) : { PRODUCTO: '', COD_GRANEL: '', LINEA: state.f.linea || 'Productos nuevos', PAIS: state.f.pais || 'PERÚ', PRIORIDAD: '', STATUS_ID: 'PENDIENTE', REGISTRO_REGULATORIO: 'PENDIENTE', ARTES_DISENO: 'PENDIENTE' };
-  renderDrawer();
-  $('#drawer').classList.add('on'); $('#scrim').classList.add('on'); $('#drawer').setAttribute('aria-hidden', 'false');
-  if (!id) setTimeout(() => $('#f_PRODUCTO')?.focus(), 200);
-}
-function closeDrawer(force) {
-  if (!force && isDirty() && !confirm('Tienes cambios sin guardar. ¿Descartarlos?')) return;
-  $('#drawer').classList.remove('on'); $('#scrim').classList.remove('on'); $('#drawer').setAttribute('aria-hidden', 'true');
-  state.drawer = null; state.draft = null;
-}
-function origRec() { return state.drawer?.id ? state.data.Seguimiento.find(x => x.ID === state.drawer.id) : null; }
-function diffOf() {
-  const o = origRec() || {}, d = state.draft, out = {};
-  Object.keys(FIELDS).forEach(k => { if (String(o[k] ?? '') !== String(d[k] ?? '')) out[k] = d[k] ?? ''; });
-  return out;
-}
-const isDirty = () => state.drawer && state.drawer.sheet === 'Seguimiento' && Object.keys(diffOf()).length > 0;
-function renderDrawer(keepScroll) {
-  const d = state.draft, o = origRec(), isNew = !o;
-  const sc = keepScroll ? $('.dr-b')?.scrollTop : 0;
-  const s = stagesOf(d), c = curIdx(d);
-  const ins = d.COD_GRANEL ? state.data.Insumos.filter(i => i.COD_GRANEL === d.COD_GRANEL) : [];
-  const hist = o ? state.data.Historial.filter(h => h.REGISTRO_ID === o.ID && h.HOJA !== 'Insumos').slice(0, 12) : [];
-  $('#drawer').innerHTML = `
-  <div class="dr-h">
-    <div class="row"><h3>${isNew ? 'Nuevo registro' : esc(d.PRODUCTO)}</h3><button class="btn icon ghost" data-act="close" aria-label="Cerrar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
-    <div class="meta">${isNew ? 'Completa lo que sepas; lo demás se puede llenar después.' : `<span class="cc">${cc(d.PAIS)}</span> ${esc(d.PAIS)} · ${esc(d.COD_GRANEL || 'Sin código granel')} · ${esc(d.LINEA)} · ${esc(o.ID)}`}</div>
-    <div class="strip-big">${s.map((x, i) => `<div class="sg st-${x.cls} ${i === c ? 'cur' : ''}"><b>${x.label}</b><small>${esc(x.text)}</small></div>`).join('')}</div>
-  </div>
-  <div class="dr-b">
-    ${SECTIONS.map(sec => `<section class="sec"><div class="sec-h"><h4>${sec.t}</h4><span class="area">${sec.area}</span></div><div class="fgrid">${sec.f.map(k => fieldHTML(k, FIELDS, d, o)).join('')}</div></section>`).join('')}
-    ${ins.length ? `<section class="sec"><div class="sec-h"><h4>Insumos de este granel</h4><span class="area">${ins.length}</span></div><div class="rel-ins">${ins.map(i => `<div class="ri"><div>${esc(i.INSUMO)}<span>${esc(i.PAIS)} · SAP ${esc(i.COD_SAP)}</span></div>${covBar(coverage(i))}</div>`).join('')}</div></section>` : ''}
-    ${o ? `<section class="sec"><div class="sec-h"><h4>Últimos cambios</h4></div>${hist.length ? `<div class="hmini">${hist.map(h => `<div><time>${fmtD(h.FECHA, false)} ${(h.FECHA || '').slice(11, 16)}</time><span>${histChange(h)} <span class="tag">· ${esc(h.USUARIO || '')}</span></span></div>`).join('')}</div>` : `<p class="tag" style="margin:0">Sin cambios registrados desde la importación. Última actualización: ${fmtD(o.ACTUALIZADO)} por ${esc(o.ACTUALIZADO_POR || '—')}.</p>`}</section>` : ''}
-  </div>
-  <div class="dr-f">
-    <span class="st" id="drst"></span>
-    ${o ? `<button class="btn ghost danger" data-act="del">Eliminar</button>` : ''}
-    <button class="btn" data-act="discard">${o ? 'Descartar' : 'Cancelar'}</button>
-    <button class="btn primary" data-act="save" id="savebtn">${o ? 'Guardar cambios' : 'Crear registro'}</button>
-  </div>`;
-  if (keepScroll) $('.dr-b').scrollTop = sc;
-  updateDirty();
-}
-function updateDirty() {
-  const el = $('#drst'); if (!el) return;
-  if (!origRec()) { el.textContent = ''; return; }
-  const n = Object.keys(diffOf()).length;
-  el.textContent = n ? `${n} ${n === 1 ? 'cambio' : 'cambios'} sin guardar` : 'Sin cambios';
-  el.className = 'st' + (n ? ' dirty' : '');
-  $('#savebtn').disabled = !n;
-}
-async function saveDrawer() {
-  const d = state.draft, o = origRec(), btn = $('#savebtn');
-  if (!String(d.PRODUCTO || '').trim()) { toast('Escribe el nombre del producto', 'err'); $('#f_PRODUCTO')?.focus(); return; }
-  if (!cfg.USER) { askName(saveDrawer); return; }
-  btn.classList.add('busy'); btn.textContent = 'Guardando…';
+function loadSession() {
   try {
-    if (!o) {
-      const data = {}; Object.keys(FIELDS).forEach(k => data[k] = d[k] ?? '');
-      const res = await api.send({ action: 'create', sheet: 'Seguimiento', data });
-      const rec = normalizeData({ Seguimiento: [res.record] }).Seguimiento[0];
-      state.data.Seguimiento.push(rec); state.data.Historial.unshift(...(res.logs || []).slice().reverse());
-      toast('Registro creado'); closeDrawer(true); render(); openDrawer(rec.ID);
+    const raw = localStorage.getItem('oc_session');
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearSession() {
+  localStorage.removeItem('oc_session');
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = loadSession();
+  if (saved && saved.email && saved.rol) {
+    currentUser = saved;
+    enterApp();
+  }
+  bindEvents();
+});
+
+/* ---------------- Login ---------------- */
+document.getElementById('loginForm').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errBox = document.getElementById('loginError');
+  errBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Ingresando...';
+  try {
+    const result = await apiCall('login', { email, password });
+    if (result.success) {
+      currentUser = { email: result.email, nombre: result.nombre, rol: result.rol };
+      saveSession(currentUser);
+      enterApp();
     } else {
-      const diff = diffOf();
-      const res = await api.send({ action: 'update', sheet: 'Seguimiento', id: o.ID, data: diff });
-      const rec = normalizeData({ Seguimiento: [res.record] }).Seguimiento[0];
-      Object.assign(o, rec); state.data.Historial.unshift(...(res.logs || []).slice().reverse());
-      state.draft = clone(o); renderDrawer(true); render();
-      toast(Object.keys(diff).length === 1 ? 'Cambio guardado' : 'Cambios guardados');
+      errBox.textContent = result.message || 'Correo o contraseña incorrectos.';
+      errBox.style.display = 'block';
     }
   } catch (e) {
-    toast('No se guardó: ' + e.message, 'err');
-    btn.classList.remove('busy'); btn.textContent = o ? 'Guardar cambios' : 'Crear registro';
+    errBox.textContent = 'No se pudo conectar. Revisa la URL de Apps Script o tu conexión.';
+    errBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ingresar';
   }
-}
-async function deleteRec() {
-  const o = origRec(); if (!o) return;
-  if (!confirm(`¿Eliminar "${o.PRODUCTO}" (${o.PAIS})? Quedará anotado en el historial.`)) return;
-  try {
-    const res = await api.send({ action: 'delete', sheet: 'Seguimiento', id: o.ID });
-    state.data.Seguimiento = state.data.Seguimiento.filter(x => x.ID !== o.ID);
-    state.data.Historial.unshift(...(res.logs || []));
-    closeDrawer(true); render(); toast('Registro eliminado');
-  } catch (e) { toast('No se eliminó: ' + e.message, 'err'); }
+});
+
+function enterApp() {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('appScreen').classList.remove('hidden');
+  document.getElementById('userName').textContent = currentUser.nombre;
+  document.getElementById('userRol').textContent = currentUser.rol;
+  if (currentUser.rol === 'Admin') {
+    document.getElementById('btnNuevaOC').classList.remove('hidden');
+    document.getElementById('btnDashboard').classList.remove('hidden');
+  }
+  renderTableHead();
+  loadOCs();
+  startBackgroundSync();
 }
 
-/* ---------------- Modal de insumo ---------------- */
-function openIns(id) {
-  const o = id ? state.data.Insumos.find(x => x.ID === id) : null;
-  if (id && !o) { toast('Ese insumo ya no existe', 'err'); return; }
-  const d = o ? clone(o) : { INSUMO: '', COD_SAP: '', COD_GRANEL: '', PRODUCTO: '', PAIS: 'PERÚ', STATUS: '', STOCK_FX: '', STOCK_PROVEEDOR: '', CONSUMO: '' };
-  state.insDraft = { d, o };
-  const draw = () => {
-    const c = coverage(d);
-    $('#mbox').innerHTML = `<div class="mh"><h3>${o ? esc(o.INSUMO) : 'Agregar insumo'}</h3><p>La cobertura se calcula como (stock Fx + stock proveedor) ÷ consumo mensual.</p></div>
-    <div class="mb"><div class="fgrid">${Object.keys(INS_FIELDS).map(k => fieldHTML(k, INS_FIELDS, d, o)).join('')}</div>
-    <div class="note" style="margin-top:14px;display:flex;align-items:center;gap:12px"><span>Cobertura resultante</span><div style="flex:1">${covBar(c)}</div></div></div>
-    <div class="mf">${o ? '<button class="btn ghost danger" data-act="delIns" style="margin-right:auto">Eliminar</button>' : ''}<button class="btn" data-act="mclose">Cancelar</button><button class="btn primary" data-act="saveIns">${o ? 'Guardar cambios' : 'Agregar insumo'}</button></div>`;
-  };
-  state.insDraft.draw = draw; draw(); openModal();
+function isAnyModalOpen() {
+  return !document.getElementById('ocModalOverlay').classList.contains('hidden') ||
+         !document.getElementById('detalleModalOverlay').classList.contains('hidden') ||
+         !document.getElementById('dashboardModalOverlay').classList.contains('hidden');
 }
-async function saveIns() {
-  const { d, o } = state.insDraft;
-  if (!String(d.INSUMO || '').trim()) { toast('Escribe la descripción del insumo', 'err'); return; }
-  if (!cfg.USER) { askName(saveIns); return; }
-  try {
-    if (o) {
-      const diff = {}; Object.keys(INS_FIELDS).forEach(k => { if (String(o[k] ?? '') !== String(d[k] ?? '')) diff[k] = d[k]; });
-      if (!Object.keys(diff).length) { closeModal(); return; }
-      const res = await api.send({ action: 'update', sheet: 'Insumos', id: o.ID, data: diff });
-      Object.assign(o, normalizeData({ Insumos: [res.record] }).Insumos[0]); state.data.Historial.unshift(...(res.logs || []).slice().reverse());
+
+let syncInFlight = false;
+
+function startBackgroundSync() {
+  // Trae cambios de otros usuarios (proveedores/admin) sin que el usuario tenga que hacer nada.
+  // No interrumpe si hay un modal abierto, si está escribiendo en el buscador, si la pestaña
+  // está en segundo plano (minimizada / otra pestaña activa), o si ya hay una sincronización en curso.
+  setInterval(() => {
+    if (document.hidden) return;
+    if (syncInFlight) return;
+    if (isAnyModalOpen()) return;
+    if (document.activeElement === document.getElementById('searchInput')) return;
+    syncInFlight = true;
+    loadOCs(true).finally(() => { syncInFlight = false; });
+  }, 180000);
+}
+
+function bindEvents() {
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    clearSession();
+    currentUser = null;
+    location.reload();
+  });
+
+  let searchDebounceTimer = null;
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    const val = e.target.value;
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      searchTerm = val.trim().toLowerCase();
+      renderTable();
+    }, 120);
+  });
+
+  document.getElementById('filterChips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentFilter = chip.dataset.estado;
+    renderTable();
+  });
+
+  document.getElementById('btnExport').addEventListener('click', exportExcel);
+  document.getElementById('btnPrint').addEventListener('click', () => window.print());
+  document.getElementById('btnRefresh').addEventListener('click', () => loadOCs());
+
+  document.getElementById('tableHeadRow').addEventListener('click', (e) => {
+    const th = e.target.closest('.th-sortable');
+    if (!th) return;
+    const key = th.dataset.key;
+    if (sortKey === key) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
     } else {
-      const res = await api.send({ action: 'create', sheet: 'Insumos', data: d });
-      state.data.Insumos.push(normalizeData({ Insumos: [res.record] }).Insumos[0]); state.data.Historial.unshift(...(res.logs || []));
+      sortKey = key;
+      sortDir = 'asc';
     }
-    closeModal(); render(); toast(o ? 'Insumo actualizado' : 'Insumo agregado');
-  } catch (e) { toast('No se guardó: ' + e.message, 'err'); }
+    renderTableHead();
+    renderTable();
+  });
+
+  document.getElementById('btnNuevaOC').addEventListener('click', () => openOcModal(null));
+  document.getElementById('ocModalClose').addEventListener('click', closeOcModal);
+  document.getElementById('ocModalCancel').addEventListener('click', closeOcModal);
+  document.getElementById('ocForm').addEventListener('submit', submitOcForm);
+
+  document.getElementById('detalleModalClose').addEventListener('click', closeDetalleModal);
+  document.getElementById('entregaForm').addEventListener('submit', submitEntregaForm);
+  document.getElementById('fechaForm').addEventListener('submit', submitFechaForm);
+
+  document.getElementById('btnDashboard').addEventListener('click', openDashboardModal);
+  document.getElementById('dashboardModalClose').addEventListener('click', closeDashboardModal);
 }
-async function delIns() {
-  const { o } = state.insDraft; if (!o || !confirm(`¿Eliminar el insumo "${o.INSUMO}"?`)) return;
+
+/* ---------------- Carga de datos ---------------- */
+async function loadOCs(silent = false) {
   try {
-    const res = await api.send({ action: 'delete', sheet: 'Insumos', id: o.ID });
-    state.data.Insumos = state.data.Insumos.filter(x => x.ID !== o.ID); state.data.Historial.unshift(...(res.logs || []));
-    closeModal(); render(); toast('Insumo eliminado');
-  } catch (e) { toast('No se eliminó: ' + e.message, 'err'); }
-}
-
-/* ---------------- Modales generales ---------------- */
-function openModal() { $('#modal').classList.add('on'); setTimeout(() => $('#mbox input, #mbox button')?.focus(), 30); }
-function closeModal() { $('#modal').classList.remove('on'); state.insDraft = null; state.modalKind = null; }
-function askName(then) {
-  state.modalKind = 'name'; state.afterName = then;
-  $('#mbox').innerHTML = `<div class="mh"><h3>¿Cómo te llamas?</h3><p>Tu nombre queda junto a cada cambio en el historial, para que el equipo sepa quién actualizó qué.</p></div>
-  <div class="mb"><div class="fld"><label for="nm">Nombre y área</label><input class="inp" id="nm" placeholder="Ej. Ana Torres · Regulatorio" value="${esc(cfg.USER || '')}"></div></div>
-  <div class="mf"><button class="btn" data-act="mclose">Cancelar</button><button class="btn primary" data-act="saveName">Continuar</button></div>`;
-  openModal(); setTimeout(() => $('#nm').focus(), 40);
-}
-function openSettings() {
-  state.modalKind = 'settings';
-  $('#mbox').innerHTML = `<div class="mh"><h3>Ajustes</h3><p>${FIXED_URL ? 'Tu nombre aparece en el historial de cambios. La clave te la da el responsable de la hoja.' : 'Conecta la app a tu Google Sheets para que todos vean y editen la misma información.'}</p></div>
-  <div class="mb" style="display:flex;flex-direction:column;gap:14px">
-    <div class="fld"><label for="s_user">Tu nombre (aparece en el historial)</label><input class="inp" id="s_user" value="${esc(cfg.USER || '')}" placeholder="Ej. Ana Torres · Regulatorio"></div>
-    ${FIXED_URL ? `<div class="note">Conectado a la hoja de Fuxion Biotech. La dirección está configurada en la app.</div><input type="hidden" id="s_url" value="${esc(cfg.API_URL)}">` : `<div class="fld"><label for="s_url">URL de la aplicación web de Apps Script</label><input class="inp" id="s_url" value="${esc(cfg.API_URL || '')}" placeholder="https://script.google.com/macros/s/…/exec"></div>`}
-    <div class="fld"><label for="s_key">Clave de acceso (si configuraste una)</label><input class="inp" id="s_key" type="password" value="${esc(cfg.CLAVE || '')}" autocomplete="off"></div>
-    ${FIXED_URL ? '' : `<div class="note"><b>¿Dónde consigo la URL?</b><ol class="steps"><li>Abre tu hoja en Google Sheets y entra a Extensiones → Apps Script.</li><li>Pega el archivo <b>Code.gs</b> del repositorio y guarda.</li><li>Implementar → Nueva implementación → Aplicación web. Ejecutar como: tú. Acceso: cualquier persona.</li><li>Copia la URL que termina en <b>/exec</b> y pégala arriba.</li></ol></div>`}
-  </div>
-  <div class="mf">${!live() ? '<button class="btn ghost" data-act="resetDemo" style="margin-right:auto">Restablecer demo</button>' : FIXED_URL ? '' : '<button class="btn ghost" data-act="toDemo" style="margin-right:auto">Usar modo demo</button>'}<button class="btn" data-act="mclose">Cancelar</button><button class="btn primary" data-act="saveSettings">Guardar y conectar</button></div>`;
-  openModal();
-}
-
-/* ---------------- Toast / CSV ---------------- */
-function toast(msg, kind) {
-  const t = document.createElement('div'); t.className = 'toast' + (kind === 'err' ? ' err' : ''); t.textContent = msg;
-  $('#toasts').appendChild(t); setTimeout(() => t.remove(), kind === 'err' ? 6000 : 2800);
-}
-function downloadCSV() {
-  const rows = filtered(), cols = ['ID', 'LINEA', ...Object.keys(FIELDS).filter(k => k !== 'LINEA'), 'ETAPA_ACTUAL', 'ACTUALIZADO', 'ACTUALIZADO_POR'];
-  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const csv = '\ufeff' + [cols.join(';'), ...rows.map(r => cols.map(c => q(c === 'ETAPA_ACTUAL' ? stageName(curIdx(r)) : r[c])).join(';'))].join('\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `fuxion_seguimiento_artes_${todayISO()}.csv`; document.body.appendChild(a); a.click(); a.remove();
-}
-
-/* ---------------- Eventos ---------------- */
-document.addEventListener('click', e => {
-  const t = e.target.closest('[data-act]'); if (!t) return;
-  const a = t.dataset.act;
-  const go = v => { location.hash = v; };
-  switch (a) {
-    case 'open': openDrawer(t.dataset.id); break;
-    case 'openIns': openIns(t.dataset.id); break;
-    case 'new': if (state.view === 'insumos') openIns(null); else openDrawer(null); break;
-    case 'newIns': openIns(null); break;
-    case 'close': closeDrawer(); break;
-    case 'discard': if (origRec()) { state.draft = clone(origRec()); renderDrawer(true); } else closeDrawer(true); break;
-    case 'save': saveDrawer(); break;
-    case 'del': deleteRec(); break;
-    case 'setv': {
-      const k = t.dataset.k, v = t.dataset.v;
-      const target = state.modalKind === null && state.insDraft ? state.insDraft.d : (t.closest('#mbox') && state.insDraft ? state.insDraft.d : state.draft);
-      target[k] = target[k] === v && FIELDS[k]?.type !== 'seg' && INS_FIELDS[k]?.type !== 'seg' ? '' : v;
-      if (t.closest('#mbox')) state.insDraft.draw(); else renderDrawer(true);
-      break;
+    const result = await apiCall('getOCs', { email: currentUser.email, rol: currentUser.rol });
+    if (result.success) {
+      allOcs = result.ocs || [];
+      renderCards();
+      renderTable();
+    } else if (!silent) {
+      alert('No se pudieron cargar las OCs: ' + (result.message || ''));
     }
-    case 'saveIns': saveIns(); break;
-    case 'delIns': delIns(); break;
-    case 'mclose': closeModal(); break;
-    case 'saveName': { const v = $('#nm').value.trim(); if (!v) { toast('Escribe tu nombre', 'err'); return; } cfg.USER = v; LS.set('ca_cfg', cfg); const f = state.afterName; closeModal(); render(); if (f) f(); break; }
-    case 'settings': openSettings(); break;
-    case 'saveSettings': {
-      const url = $('#s_url').value.trim();
-      if (url && !/^https:\/\/script\.google(usercontent)?\.com\//.test(url)) { toast('La URL debe ser de script.google.com y terminar en /exec', 'err'); return; }
-      cfg.USER = $('#s_user').value.trim(); cfg.API_URL = url; cfg.CLAVE = $('#s_key').value;
-      LS.set('ca_cfg', cfg); closeModal(); state.loaded = false; $('#view').innerHTML = '<div class="loading"><div class="spin"></div>Conectando…</div>'; loadAll(); break;
+  } catch (e) {
+    console.error('[loadOCs] Error real:', e);
+    if (!silent) {
+      alert('Error de conexión al cargar las OCs. Revisa la consola (F12) para más detalle.');
     }
-    case 'toDemo': cfg.API_URL = ''; LS.set('ca_cfg', cfg); closeModal(); loadAll(); break;
-    case 'resetDemo': if (confirm('¿Volver a los datos originales del Excel? Se perderán los cambios hechos en modo demo.')) { LS.del('ca_demo_v1'); closeModal(); loadAll(); } break;
-    case 'theme': {
-      const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      const n = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = n; LS.set('ca_theme', n); break;
-    }
-    case 'refresh': loadAll(); break;
-    case 'linea': state.f.linea = t.dataset.v; render(); break;
-    case 'pais': state.f.pais = t.dataset.v; render(); break;
-    case 'clearF': Object.assign(state.f, { pais: '', etapa: '', prio: '', alert: false, q: '' }); $('#q').value = ''; render(); break;
-    case 'sort': { const k = t.dataset.k; state.sort = { k, d: state.sort.k === k ? -state.sort.d : 1 }; render(); break; }
-    case 'isort': { const k = t.dataset.k; state.inf.d = state.inf.sort === k ? -state.inf.d : 1; state.inf.sort = k; render(); break; }
-    case 'icrit': state.inf.crit = !state.inf.crit; render(); break;
-    case 'goStage': Object.assign(state.f, { etapa: String(t.dataset.i), pais: '', alert: false, prio: '' }); go('seguimiento'); break;
-    case 'goPais': Object.assign(state.f, { pais: t.dataset.p, etapa: '', alert: false }); go('seguimiento'); break;
-    case 'goAlert': Object.assign(state.f, { alert: true, etapa: '', pais: '' }); go('seguimiento'); break;
-    case 'goAll': Object.assign(state.f, { alert: false, etapa: '', pais: '', prio: '' }); go('seguimiento'); break;
-    case 'csv': downloadCSV(); break;
   }
-});
-document.addEventListener('input', e => {
-  const t = e.target;
-  if (t.id === 'q') { state.f.q = t.value; if (state.view === 'panel' && t.value) { location.hash = 'seguimiento'; return; } clearTimeout(state.qt); state.qt = setTimeout(() => { const pos = t.selectionStart; render(); const q = $('#q'); q.focus(); q.setSelectionRange(pos, pos); }, 160); return; }
-  if (t.dataset.k) {
-    const inModal = !!t.closest('#mbox');
-    const target = inModal ? state.insDraft.d : state.draft;
-    target[t.dataset.k] = t.value;
-    t.closest('.fld')?.classList.toggle('changed', !!(inModal ? state.insDraft.o : origRec()) && String(((inModal ? state.insDraft.o : origRec()) || {})[t.dataset.k] ?? '') !== t.value);
-    if (inModal) { const n = $('#mbox .note div'); if (n) n.innerHTML = covBar(coverage(target)); }
-    else updateDirty();
-  }
-});
-document.addEventListener('change', e => {
-  const t = e.target;
-  if (t.dataset.filter) { state.f[t.dataset.filter] = t.type === 'checkbox' ? t.checked : t.value; render(); }
-  if (t.dataset.ifilter) { state.inf[t.dataset.ifilter] = t.type === 'checkbox' ? t.checked : t.value; render(); }
-  if (t.dataset.k && !t.closest('#mbox') && /^FECHA/.test(t.dataset.k)) renderDrawer(true);
-});
-document.addEventListener('keydown', e => {
-  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
-  if (e.key === 'Escape') { if ($('#modal').classList.contains('on')) closeModal(); else if (state.drawer) closeDrawer(); return; }
-  if ((e.metaKey || e.ctrlKey) && e.key === 's' && state.drawer) { e.preventDefault(); saveDrawer(); return; }
-  if (typing) { if (e.key === 'Enter' && document.activeElement.id === 'nm') $('[data-act="saveName"]').click(); return; }
-  if (e.key === '/') { e.preventDefault(); $('#q').focus(); }
-  if (e.key === 'n' && !state.drawer) { e.preventDefault(); openDrawer(null); }
-  if (e.key === 'Enter' && document.activeElement?.classList.contains('lrow')) document.activeElement.click();
-});
-function route() {
-  const v = (location.hash || '#panel').slice(1);
-  state.view = VIEWS[v] ? v : 'panel';
-  render(); $('.content').scrollTop = 0;
 }
-window.addEventListener('hashchange', route);
-window.addEventListener('focus', () => { if (live() && !state.drawer && Date.now() - state.lastLoad > 90000) loadAll(true); });
-window.addEventListener('beforeunload', e => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
-/* ---------------- Inicio ---------------- */
-(function init() {
-  const th = LS.get('ca_theme', null); if (th) document.documentElement.dataset.theme = th;
-  state.view = VIEWS[(location.hash || '').slice(1)] ? location.hash.slice(1) : 'panel';
-  render();
-  loadAll(true);
-})();
+function isRetrasado(oc) {
+  if (oc.estado === 'Terminado') return false;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const fechaEfectiva = oc.fecha_entrega_actualizada || oc.fecha_entrega;
+  const fe = new Date(fechaEfectiva + 'T00:00:00');
+  if (isNaN(fe.getTime())) return false;
+  return fe < hoy;
+}
+
+/* ---------------- Dashboard ---------------- */
+function renderCards() {
+  const total = allOcs.length;
+  const totalKg = allOcs.filter(o => o.unidad === 'Kg').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const totalMill = allOcs.filter(o => o.unidad === 'Mill').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const retrasadas = allOcs.filter(isRetrasado).length;
+
+  document.getElementById('cardTotal').textContent = total;
+  document.getElementById('cardKg').textContent = totalKg.toLocaleString('es-PE');
+  document.getElementById('cardMill').textContent = totalMill.toLocaleString('es-PE');
+  document.getElementById('cardRetrasadas').textContent = retrasadas;
+}
+
+/* ---------------- Tabla ---------------- */
+let sortKey = null;
+let sortDir = 'asc'; // 'asc' | 'desc'
+
+function getColumnDefs() {
+  const isAdmin = currentUser.rol === 'Admin';
+  const cols = [
+    { label: 'N° OC', key: 'numero_oc', type: 'num' },
+    { label: 'Código', key: 'codigo', type: 'str' },
+    { label: 'Descripción', key: 'descripcion', type: 'str' },
+    { label: 'Cantidad', key: 'cantidad_total', type: 'num' }
+  ];
+  if (!isAdmin) cols.push({ label: 'Fecha inicio', key: 'fecha_inicio', type: 'str' });
+  cols.push({ label: 'Fecha entrega', key: 'fecha_entrega', type: 'str' });
+  cols.push({ label: 'Últ. fecha programada', key: 'fecha_entrega_actualizada', type: 'str' });
+  cols.push({ label: 'Estado', key: 'estado', type: 'str' });
+  cols.push({ label: 'Stock almacén', key: 'stock_almacen', type: 'num' });
+  if (isAdmin) {
+    cols.push({ label: 'Proveedor', key: 'email_proveedor', type: 'str' });
+    cols.push({ label: 'Acciones', key: null, type: null });
+  } else {
+    cols.push({ label: 'Precio unit. (USD)', key: 'precio_unitario', type: 'num' });
+    cols.push({ label: 'Detalle', key: null, type: null });
+  }
+  return cols;
+}
+
+function renderTableHead() {
+  const cols = getColumnDefs();
+  document.getElementById('tableHeadRow').innerHTML = cols.map(c => {
+    if (!c.key) return `<th>${c.label}</th>`;
+    const active = sortKey === c.key;
+    const arrow = active ? (sortDir === 'asc' ? ' ▲' : ' ▼') : '';
+    return `<th class="th-sortable ${active ? 'th-active' : ''}" data-key="${c.key}" data-type="${c.type}">${c.label}${arrow}</th>`;
+  }).join('');
+}
+
+function getFilteredOcs() {
+  let filtered = allOcs.filter(oc => {
+    if (currentFilter !== 'Todos' && oc.estado !== currentFilter) return false;
+    if (searchTerm) {
+      const hay = (String(oc.numero_oc) + ' ' + oc.codigo + ' ' + oc.descripcion).toLowerCase();
+      if (!hay.includes(searchTerm)) return false;
+    }
+    return true;
+  });
+
+  if (sortKey) {
+    const col = getColumnDefs().find(c => c.key === sortKey);
+    const type = col ? col.type : 'str';
+    filtered = filtered.slice().sort((a, b) => {
+      let av = a[sortKey], bv = b[sortKey];
+      if (type === 'num') {
+        av = Number(av) || 0; bv = Number(bv) || 0;
+        return sortDir === 'asc' ? av - bv : bv - av;
+      }
+      av = String(av || '').toLowerCase();
+      bv = String(bv || '').toLowerCase();
+      if (av < bv) return sortDir === 'asc' ? -1 : 1;
+      if (av > bv) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  return filtered;
+}
+
+function renderTable() {
+  const isAdmin = currentUser.rol === 'Admin';
+  const filtered = getFilteredOcs();
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  tbody.innerHTML = filtered.map(oc => {
+    const retrasado = isRetrasado(oc);
+    const estadoClass = ESTADO_CLASS[oc.estado] || '';
+    const estadoOptions = ESTADOS.map(es =>
+      `<option value="${es}" ${es === oc.estado ? 'selected' : ''}>${es}</option>`
+    ).join('');
+
+    const estadoCell = `
+      <select class="estado-select ${estadoClass}" data-row="${oc.rowNumber}" onchange="cambiarEstado(${oc.rowNumber}, this.value)">
+        ${estadoOptions}
+      </select>`;
+
+    let lastCols;
+    if (isAdmin) {
+      lastCols = `
+        <td>${oc.email_proveedor || ''}</td>
+        <td class="row-actions row-actions-col">
+          <button class="icon-btn" title="Editar" onclick="openOcModal(${oc.rowNumber})">✏️</button>
+          <button class="icon-btn" title="Eliminar" onclick="eliminarOC(${oc.rowNumber})">🗑️</button>
+        </td>`;
+    } else {
+      lastCols = `
+        <td class="mono">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
+        <td class="row-actions row-actions-col">
+          <button class="icon-btn" title="Detalle" onclick="openDetalleModal(${oc.rowNumber})">👁️</button>
+        </td>`;
+    }
+
+    return `
+      <tr class="${retrasado ? 'retrasado' : ''}">
+        <td class="oc-num">${oc.numero_oc}</td>
+        <td>${oc.codigo}</td>
+        <td>${oc.descripcion}</td>
+        <td class="mono">${Number(oc.cantidad_total || 0).toLocaleString('es-PE')} ${oc.unidad}</td>
+        ${isAdmin ? '' : `<td class="mono">${oc.fecha_inicio || ''}</td>`}
+        <td class="mono">${oc.fecha_entrega || ''}${retrasado ? '<span class="tag">Retrasado</span>' : ''}</td>
+        <td class="mono">${oc.fecha_entrega_actualizada ? oc.fecha_entrega_actualizada : '<span style="color:var(--ink-soft)">—</span>'}</td>
+        <td>${estadoCell}</td>
+        <td class="mono">${Number(oc.stock_almacen || 0).toLocaleString('es-PE')}</td>
+        ${lastCols}
+      </tr>`;
+  }).join('');
+}
+
+/* ---------------- Cambiar estado ---------------- */
+async function cambiarEstado(rowNumber, estado) {
+  if (!estado) return;
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  const estadoPrevio = oc ? oc.estado : null;
+  const stockPrevio = oc ? oc.stock_almacen : null;
+
+  // Actualización optimista: se ve el cambio de inmediato, sin esperar al servidor
+  if (oc) {
+    oc.estado = estado;
+    if (estado === 'Terminado') oc.stock_almacen = Number(oc.cantidad_total);
+    renderCards();
+    renderTable();
+  }
+  try {
+    const result = await apiCall('updateEstado', { rowNumber, estado });
+    if (!result.success) {
+      alert('No se pudo actualizar el estado: ' + (result.message || ''));
+      if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
+    }
+  } catch (e) {
+    alert('Error de conexión al actualizar el estado.');
+    if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
+  }
+}
+
+/* ---------------- Modal Nueva/Editar OC (Admin) ---------------- */
+function openOcModal(rowNumber) {
+  const form = document.getElementById('ocForm');
+  form.reset();
+  document.getElementById('f_rowNumber').value = '';
+
+  if (rowNumber) {
+    const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    if (!oc) return;
+    document.getElementById('ocModalTitle').textContent = 'Editar Orden de Compra';
+    document.getElementById('f_rowNumber').value = oc.rowNumber;
+    document.getElementById('f_numero_oc').value = oc.numero_oc;
+    document.getElementById('f_codigo').value = oc.codigo;
+    document.getElementById('f_descripcion').value = oc.descripcion;
+    document.getElementById('f_cantidad_total').value = oc.cantidad_total;
+    document.getElementById('f_unidad').value = oc.unidad;
+    document.getElementById('f_fecha_inicio').value = oc.fecha_inicio;
+    document.getElementById('f_fecha_entrega').value = oc.fecha_entrega;
+    document.getElementById('f_estado').value = oc.estado;
+    document.getElementById('f_precio_unitario').value = oc.precio_unitario;
+    document.getElementById('f_email_proveedor').value = oc.email_proveedor;
+  } else {
+    document.getElementById('ocModalTitle').textContent = 'Nueva Orden de Compra';
+    document.getElementById('f_estado').value = 'Inicio';
+  }
+  document.getElementById('ocModalOverlay').classList.remove('hidden');
+}
+function closeOcModal() {
+  document.getElementById('ocModalOverlay').classList.add('hidden');
+}
+
+async function submitOcForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('f_rowNumber').value;
+  const payload = {
+    numero_oc: document.getElementById('f_numero_oc').value.trim(),
+    codigo: document.getElementById('f_codigo').value.trim(),
+    descripcion: document.getElementById('f_descripcion').value.trim(),
+    cantidad_total: document.getElementById('f_cantidad_total').value,
+    unidad: document.getElementById('f_unidad').value,
+    fecha_inicio: document.getElementById('f_fecha_inicio').value,
+    fecha_entrega: document.getElementById('f_fecha_entrega').value,
+    estado: document.getElementById('f_estado').value,
+    precio_unitario: document.getElementById('f_precio_unitario').value,
+    email_proveedor: document.getElementById('f_email_proveedor').value.trim().toLowerCase()
+  };
+
+  const btn = document.getElementById('ocModalSave');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  try {
+    let result;
+    if (rowNumber) {
+      result = await apiCall('updateOC', { ...payload, rowNumber });
+      if (result.success) {
+        const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+        if (idx > -1) {
+          allOcs[idx] = {
+            ...allOcs[idx],
+            ...payload,
+            cantidad_total: Number(payload.cantidad_total),
+            precio_unitario: Number(payload.precio_unitario),
+            rowNumber: Number(rowNumber)
+          };
+        }
+        closeOcModal();
+        renderCards();
+        renderTable();
+      } else {
+        alert('No se pudo guardar: ' + (result.message || 'Error desconocido'));
+      }
+    } else {
+      result = await apiCall('createOC', payload);
+      if (result.success) {
+        allOcs.push({
+          ...payload,
+          cantidad_total: Number(payload.cantidad_total),
+          precio_unitario: Number(payload.precio_unitario),
+          stock_almacen: 0,
+          detalle_entregas: '',
+          fecha_entrega_actualizada: '',
+          rowNumber: result.rowNumber
+        });
+        closeOcModal();
+        renderCards();
+        renderTable();
+      } else {
+        alert('No se pudo guardar: ' + (result.message || 'Error desconocido'));
+      }
+    }
+  } catch (e) {
+    alert('Error de conexión al guardar la OC.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+  }
+}
+
+async function eliminarOC(rowNumber) {
+  if (!confirm('¿Eliminar esta orden de compra? Esta acción no se puede deshacer.')) return;
+  try {
+    const result = await apiCall('deleteOC', { rowNumber });
+    if (result.success) {
+      loadOCs();
+    } else {
+      alert('No se pudo eliminar: ' + (result.message || ''));
+    }
+  } catch (e) {
+    alert('Error de conexión al eliminar la OC.');
+  }
+}
+
+/* ---------------- Modal Detalle (Proveedor) ---------------- */
+function openDetalleModal(rowNumber) {
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  if (!oc) return;
+
+  document.getElementById('e_rowNumber').value = oc.rowNumber;
+  document.getElementById('e_fecha').value = '';
+  document.getElementById('e_cantidad').value = '';
+
+  document.getElementById('ff_rowNumber').value = oc.rowNumber;
+  document.getElementById('ff_nuevaFecha').value = oc.fecha_entrega_actualizada || oc.fecha_entrega || '';
+
+  document.getElementById('detalleInfo').innerHTML = `
+    <div><div class="k">N° OC</div><div class="v mono">${oc.numero_oc}</div></div>
+    <div><div class="k">Código</div><div class="v">${oc.codigo}</div></div>
+    <div><div class="k">Descripción</div><div class="v">${oc.descripcion}</div></div>
+    <div><div class="k">Cantidad total</div><div class="v mono">${Number(oc.cantidad_total||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
+    <div><div class="k">Stock en almacén</div><div class="v mono">${Number(oc.stock_almacen||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
+    <div><div class="k">Fecha de inicio</div><div class="v mono">${oc.fecha_inicio}</div></div>
+    <div><div class="k">Fecha de entrega (original)</div><div class="v mono">${oc.fecha_entrega}</div></div>
+    <div><div class="k">Última fecha programada</div><div class="v mono">${oc.fecha_entrega_actualizada || 'Sin cambios'}</div></div>
+    <div><div class="k">Estado</div><div class="v">${oc.estado}</div></div>
+    <div><div class="k">Precio unitario</div><div class="v mono">$${Number(oc.precio_unitario||0).toFixed(2)}</div></div>
+  `;
+
+  const list = document.getElementById('entregasList');
+  const emptyMsg = document.getElementById('entregasEmpty');
+  const entregas = (oc.detalle_entregas || '').split('|').map(s => s.trim()).filter(Boolean);
+  if (entregas.length === 0) {
+    list.classList.add('hidden');
+    emptyMsg.classList.remove('hidden');
+    list.innerHTML = '';
+  } else {
+    emptyMsg.classList.add('hidden');
+    list.classList.remove('hidden');
+    list.innerHTML = entregas.map(e => {
+      const parts = e.split(':');
+      const fecha = (parts[0] || '').trim();
+      const cant = (parts.slice(1).join(':') || '').trim();
+      return `<li><span>${fecha}</span><span>${cant}</span></li>`;
+    }).join('');
+  }
+
+  document.getElementById('detalleModalOverlay').classList.remove('hidden');
+}
+function closeDetalleModal() {
+  document.getElementById('detalleModalOverlay').classList.add('hidden');
+}
+
+async function submitEntregaForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('e_rowNumber').value;
+  const fecha = document.getElementById('e_fecha').value;
+  const cantidad = document.getElementById('e_cantidad').value;
+
+  const btn = document.getElementById('btnRegistrarEntrega');
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+  try {
+    const result = await apiCall('registrarEntrega', { rowNumber, fecha, cantidad });
+    if (result.success) {
+      const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+      if (idx > -1) {
+        allOcs[idx].stock_almacen = Number(result.nuevoStock);
+        allOcs[idx].detalle_entregas = result.nuevoDetalle;
+        if (Number(result.nuevoStock) >= Number(allOcs[idx].cantidad_total)) {
+          allOcs[idx].estado = 'Terminado';
+        }
+      }
+      closeDetalleModal();
+      renderCards();
+      renderTable();
+    } else {
+      alert('No se pudo registrar la entrega: ' + (result.message || ''));
+    }
+  } catch (e) {
+    alert('Error de conexión al registrar la entrega.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Registrar entrega';
+  }
+}
+
+/* ---------------- Dashboard general (Admin) ---------------- */
+function computeDashboardStats() {
+  const totalOCs = allOcs.length;
+  const totalKg = allOcs.filter(o => o.unidad === 'Kg').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const totalMill = allOcs.filter(o => o.unidad === 'Mill').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const valorTotal = allOcs.reduce((s, o) => s + Number(o.cantidad_total || 0) * Number(o.precio_unitario || 0), 0);
+  const retrasadas = allOcs.filter(isRetrasado).length;
+
+  const porEstado = ESTADOS.map(es => ({
+    estado: es,
+    count: allOcs.filter(o => o.estado === es).length
+  }));
+
+  const proveedoresMap = {};
+  allOcs.forEach(o => {
+    const key = o.email_proveedor || '(sin proveedor)';
+    if (!proveedoresMap[key]) proveedoresMap[key] = { email: key, count: 0, kg: 0, mill: 0, valor: 0, retrasadas: 0 };
+    const p = proveedoresMap[key];
+    p.count++;
+    if (o.unidad === 'Kg') p.kg += Number(o.cantidad_total || 0);
+    if (o.unidad === 'Mill') p.mill += Number(o.cantidad_total || 0);
+    p.valor += Number(o.cantidad_total || 0) * Number(o.precio_unitario || 0);
+    if (isRetrasado(o)) p.retrasadas++;
+  });
+  const porProveedor = Object.values(proveedoresMap).sort((a, b) => b.valor - a.valor);
+
+  return { totalOCs, totalKg, totalMill, valorTotal, retrasadas, porEstado, porProveedor };
+}
+
+const DASH_ESTADO_CLASS = {
+  'Inicio': 'dash-neutral',
+  'En Producción': 'dash-warning',
+  'Por Entregar': 'dash-info',
+  'Terminado': 'dash-success'
+};
+
+function renderDashboardBody() {
+  const s = computeDashboardStats();
+  const maxEstadoCount = Math.max(1, ...s.porEstado.map(e => e.count));
+
+  const resumenHtml = `
+    <div class="dash-summary">
+      <div class="dash-stat"><div class="k">Total OCs</div><div class="v">${s.totalOCs}</div></div>
+      <div class="dash-stat"><div class="k">Valor total (USD)</div><div class="v">$${s.valorTotal.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</div></div>
+      <div class="dash-stat"><div class="k">Total Kg</div><div class="v">${s.totalKg.toLocaleString('es-PE')}</div></div>
+      <div class="dash-stat"><div class="k">Total Millares</div><div class="v">${s.totalMill.toLocaleString('es-PE')}</div></div>
+      <div class="dash-stat dash-stat-danger"><div class="k">Retrasadas</div><div class="v">${s.retrasadas}</div></div>
+    </div>`;
+
+  const estadoHtml = `
+    <h3 class="subhead">OCs por estado</h3>
+    <div class="dash-bars">
+      ${s.porEstado.map(e => `
+        <div class="dash-bar-row">
+          <span class="dash-bar-label">${e.estado}</span>
+          <div class="dash-bar-track"><div class="dash-bar-fill ${DASH_ESTADO_CLASS[e.estado]}" style="width:${(e.count / maxEstadoCount * 100).toFixed(0)}%"></div></div>
+          <span class="dash-bar-count">${e.count}</span>
+        </div>`).join('')}
+    </div>`;
+
+  const proveedorHtml = s.porProveedor.length === 0 ? '' : `
+    <h3 class="subhead">Por proveedor</h3>
+    <div class="table-wrap dash-table-wrap">
+      <table>
+        <thead><tr>
+          <th>Proveedor</th><th>OCs</th><th>Kg</th><th>Mill</th><th>Valor (USD)</th><th>Retrasadas</th>
+        </tr></thead>
+        <tbody>
+          ${s.porProveedor.map(p => `
+            <tr class="${p.retrasadas > 0 ? 'retrasado' : ''}">
+              <td>${p.email}</td>
+              <td class="mono">${p.count}</td>
+              <td class="mono">${p.kg.toLocaleString('es-PE')}</td>
+              <td class="mono">${p.mill.toLocaleString('es-PE')}</td>
+              <td class="mono">$${p.valor.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+              <td class="mono">${p.retrasadas}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+
+  document.getElementById('dashboardBody').innerHTML = resumenHtml + estadoHtml + proveedorHtml;
+}
+
+function openDashboardModal() {
+  renderDashboardBody();
+  document.getElementById('dashboardModalOverlay').classList.remove('hidden');
+}
+function closeDashboardModal() {
+  document.getElementById('dashboardModalOverlay').classList.add('hidden');
+}
+
+async function submitFechaForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('ff_rowNumber').value;
+  const nuevaFecha = document.getElementById('ff_nuevaFecha').value;
+
+  const btn = document.getElementById('btnActualizarFecha');
+  btn.disabled = true;
+  btn.textContent = 'Actualizando...';
+  try {
+    const result = await apiCall('actualizarFechaEntrega', { rowNumber, nuevaFecha });
+    if (result.success) {
+      const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+      if (idx > -1) allOcs[idx].fecha_entrega_actualizada = nuevaFecha;
+      renderCards();
+      renderTable();
+      openDetalleModal(rowNumber); // refresca la info dentro del mismo modal
+    } else {
+      alert('No se pudo actualizar la fecha: ' + (result.message || ''));
+    }
+  } catch (e) {
+    alert('Error de conexión al actualizar la fecha.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Actualizar fecha';
+  }
+}
+
+/* ---------------- Exportar Excel ---------------- */
+function exportExcel() {
+  const filtered = getFilteredOcs();
+  if (filtered.length === 0) {
+    alert('No hay datos para exportar con el filtro actual.');
+    return;
+  }
+  const rows = filtered.map(oc => ({
+    'N° OC': oc.numero_oc,
+    'Código': oc.codigo,
+    'Descripción': oc.descripcion,
+    'Cantidad total': oc.cantidad_total,
+    'Unidad': oc.unidad,
+    'Fecha inicio': oc.fecha_inicio,
+    'Fecha entrega': oc.fecha_entrega,
+    'Última fecha programada': oc.fecha_entrega_actualizada || '',
+    'Estado': oc.estado,
+    'Stock almacén': oc.stock_almacen,
+    'Precio unitario (USD)': oc.precio_unitario,
+    'Proveedor': oc.email_proveedor,
+    'Retrasado': isRetrasado(oc) ? 'Sí' : 'No'
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'OCs');
+  const fecha = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `OCs_${fecha}.xlsx`);
+}
 </script>
 </body>
 </html>
