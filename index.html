@@ -676,7 +676,7 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyokPwCHlmVfwjTYveTJI6QDoJzpoZMONjldv7PdKkW1LfyShpVPsXxcHGsdKoLf4Ft9g/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyBRe2bFd45P-o8Bwg4WGV6g3MZlMRXown17pwS7Kws1BXwJhd6xyhRy41VVFQ1abMzrw/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -773,14 +773,20 @@ function isAnyModalOpen() {
          !document.getElementById('dashboardModalOverlay').classList.contains('hidden');
 }
 
+let syncInFlight = false;
+
 function startBackgroundSync() {
   // Trae cambios de otros usuarios (proveedores/admin) sin que el usuario tenga que hacer nada.
-  // No interrumpe si hay un modal abierto o si está escribiendo en el buscador.
+  // No interrumpe si hay un modal abierto, si está escribiendo en el buscador, si la pestaña
+  // está en segundo plano (minimizada / otra pestaña activa), o si ya hay una sincronización en curso.
   setInterval(() => {
+    if (document.hidden) return;
+    if (syncInFlight) return;
     if (isAnyModalOpen()) return;
     if (document.activeElement === document.getElementById('searchInput')) return;
-    loadOCs(true);
-  }, 90000);
+    syncInFlight = true;
+    loadOCs(true).finally(() => { syncInFlight = false; });
+  }, 180000);
 }
 
 function bindEvents() {
