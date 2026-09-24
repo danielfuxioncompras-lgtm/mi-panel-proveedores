@@ -33,6 +33,36 @@
     --neutral-bg:#F0EAFB;
     --teal:#0FA9A0;
     --teal-bg:#E1F7F5;
+    --row-hover:#F6F4FE;
+    --row-hover-retrasado:#F9DAD6;
+  }
+
+  :root[data-theme="dark"]{
+    --bg:#14151F;
+    --surface:#1D1F2E;
+    --ink:#E7E8F0;
+    --ink-soft:#9296AC;
+    --primary:#2B2A6B;
+    --primary2:#7C6CFF;
+    --primary-ink:#F3F1FF;
+    --accent:#9B6BFF;
+    --accent2:#FF6F61;
+    --accent-ink:#FFFFFF;
+    --border:#2E3046;
+    --danger:#FF6B5E;
+    --danger-bg:#3B1F1D;
+    --success:#3FDBA0;
+    --success-bg:#123B2C;
+    --warning:#F2B33D;
+    --warning-bg:#3A2E10;
+    --info:#6FA3FF;
+    --info-bg:#152A45;
+    --neutral:#B39CFF;
+    --neutral-bg:#241F3D;
+    --teal:#2FD9CE;
+    --teal-bg:#0F3A38;
+    --row-hover:#242642;
+    --row-hover-retrasado:#402420;
   }
   *{box-sizing:border-box;}
   body{
@@ -97,7 +127,7 @@
     width:100%;
     padding:10px 11px;
     border:1px solid var(--border);
-    background:#fff;
+    background:var(--surface);
     font-size:14px;
     font-family:inherit;
     color:var(--ink);
@@ -124,7 +154,7 @@
   .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(43,42,107,.55);}
   .btn-accent{background:linear-gradient(135deg,var(--accent),var(--primary2));color:#fff;box-shadow:0 6px 16px -6px rgba(124,58,237,.55);}
   .btn-accent:hover{transform:translateY(-1px);box-shadow:0 10px 20px -8px rgba(124,58,237,.6);}
-  .btn-outline{background:#fff;border-color:var(--border);color:var(--ink);}
+  .btn-outline{background:var(--surface);border-color:var(--border);color:var(--ink);}
   .btn-outline:hover{border-color:var(--primary2);color:var(--primary2);}
   .btn-danger-text{background:transparent;color:var(--danger);border:none;padding:4px;}
   .btn-block{width:100%;}
@@ -179,6 +209,13 @@
     font-family:inherit;
   }
   header.app-header .logout:hover{background:rgba(255,255,255,.1);}
+  header.app-header .theme-toggle{
+    background:transparent;border:1px solid rgba(255,255,255,.3);
+    color:var(--primary-ink);width:30px;height:30px;
+    display:inline-flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:14px;padding:0;
+  }
+  header.app-header .theme-toggle:hover{background:rgba(255,255,255,.1);}
 
   main{
     max-width:1600px;
@@ -251,7 +288,7 @@
     width:100%;
     padding:9px 12px 9px 34px;
     border:1px solid var(--border);
-    background:#fff;
+    background:var(--surface);
     font-size:13.5px;
     font-family:inherit;
   }
@@ -264,7 +301,7 @@
   .chip{
     padding:7px 13px;
     border:1px solid var(--border);
-    background:#fff;
+    background:var(--surface);
     font-size:12.5px;
     font-weight:500;
     color:var(--ink-soft);
@@ -313,8 +350,8 @@
   }
   tbody tr:last-child td{border-bottom:none;}
   tbody tr.retrasado{background:var(--danger-bg);}
-  tbody tr:hover{background:#F6F4FE;}
-  tbody tr.retrasado:hover{background:#F9DAD6;}
+  tbody tr:hover{background:var(--row-hover);}
+  tbody tr.retrasado:hover{background:var(--row-hover-retrasado);}
   .oc-num{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--primary2);}
   .tag{
     display:inline-flex;align-items:center;gap:4px;
@@ -329,7 +366,7 @@
     font-weight:600;
     padding:6px 8px;
     border:1px solid transparent;
-    background:#fff;
+    background:var(--surface);
     color:var(--ink);
     min-width:132px;
     cursor:pointer;
@@ -340,7 +377,7 @@
   select.estado-select.est-terminado{background:var(--success-bg);color:var(--success);border-color:#B9EDD3;}
   .row-actions{display:flex;gap:4px;align-items:center;}
   .icon-btn{
-    background:#fff;border:1px solid var(--border);
+    background:var(--surface);border:1px solid var(--border);
     width:28px;height:28px;
     display:inline-flex;align-items:center;justify-content:center;
     cursor:pointer;font-size:13px;
@@ -359,7 +396,7 @@
     z-index:50;
   }
   .modal{
-    background:#fff;
+    background:var(--surface);
     width:100%;
     max-width:600px;
     max-height:88vh;
@@ -477,6 +514,7 @@
     <div class="userbox">
       <span id="userName"></span>
       <span class="rolechip" id="userRol"></span>
+      <button class="theme-toggle" id="themeToggle" title="Cambiar tema claro/oscuro">🌙</button>
       <button class="logout" id="logoutBtn">Salir</button>
     </div>
   </header>
@@ -670,13 +708,30 @@
   </div>
 </div>
 
+<!-- ============ MODAL: Confirmación genérica (Sí/No) ============ -->
+<div class="modal-overlay hidden" id="confirmModalOverlay">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h2 id="confirmModalTitle">¿Estás seguro?</h2>
+      <button class="modal-close" id="confirmModalClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmModalMessage" style="margin:0;font-size:13.5px;color:var(--ink-soft);line-height:1.5;"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" id="confirmModalNo">No</button>
+      <button type="button" class="btn" id="confirmModalYes" style="background:var(--danger);color:#fff;">Sí</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* =========================================================
    CONFIGURACIÓN
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-K4qyua1vMlCO2-g0XbK9RpXreyUHsNnOua529mvV3wDGKofDx5IOiCuxoGZVcoNIwA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzu0_wDNuiRipmGXTQYRnJtHC5ekuRdHH2X152ottM8gnPTRj88QIbCO4XzI5ov3DTm_g/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -735,6 +790,7 @@ function clearSession() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
+  applyTheme(localStorage.getItem('oc_theme') || 'light');
   const saved = loadSession();
   if (saved && saved.email && saved.rol) {
     currentUser = saved;
@@ -742,6 +798,13 @@ window.addEventListener('DOMContentLoaded', () => {
   }
   bindEvents();
 });
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('oc_theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
 
 /* ---------------- Login ---------------- */
 document.getElementById('loginForm').addEventListener('submit', async (ev) => {
@@ -790,7 +853,8 @@ function enterApp() {
 function isAnyModalOpen() {
   return !document.getElementById('ocModalOverlay').classList.contains('hidden') ||
          !document.getElementById('detalleModalOverlay').classList.contains('hidden') ||
-         !document.getElementById('dashboardModalOverlay').classList.contains('hidden');
+         !document.getElementById('dashboardModalOverlay').classList.contains('hidden') ||
+         !document.getElementById('confirmModalOverlay').classList.contains('hidden');
 }
 
 let syncInFlight = false;
@@ -810,6 +874,11 @@ function startBackgroundSync() {
 }
 
 function bindEvents() {
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  });
+
   document.getElementById('logoutBtn').addEventListener('click', () => {
     clearSession();
     currentUser = null;
@@ -864,6 +933,10 @@ function bindEvents() {
 
   document.getElementById('btnDashboard').addEventListener('click', openDashboardModal);
   document.getElementById('dashboardModalClose').addEventListener('click', closeDashboardModal);
+
+  document.getElementById('confirmModalYes').addEventListener('click', () => resolveConfirm(true));
+  document.getElementById('confirmModalNo').addEventListener('click', () => resolveConfirm(false));
+  document.getElementById('confirmModalClose').addEventListener('click', () => resolveConfirm(false));
 }
 
 /* ---------------- Carga de datos ---------------- */
@@ -931,8 +1004,9 @@ function getColumnDefs() {
   cols.push({ label: 'Fecha entrega', key: 'fecha_entrega', type: 'str' });
   cols.push({ label: 'Últ. fecha programada', key: 'fecha_entrega_actualizada', type: 'str' });
   cols.push({ label: 'Estado', key: 'estado', type: 'str' });
-  cols.push({ label: 'Stock almacén', key: 'stock_almacen', type: 'num' });
+  cols.push({ label: 'Cant. Despachar', key: 'stock_almacen', type: 'num' });
   if (isAdmin) {
+    cols.push({ label: 'Precio unit. (USD)', key: 'precio_unitario', type: 'num' });
     cols.push({ label: 'Proveedor', key: 'email_proveedor', type: 'str' });
     cols.push({ label: 'Acciones', key: null, type: null });
   } else {
@@ -1010,6 +1084,7 @@ function renderTable() {
     let lastCols;
     if (isAdmin) {
       lastCols = `
+        <td class="mono">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
         <td>${oc.email_proveedor || ''}</td>
         <td class="row-actions row-actions-col">
           <button class="icon-btn" title="Editar" onclick="openOcModal(${oc.rowNumber})">✏️</button>
@@ -1164,7 +1239,13 @@ async function submitOcForm(ev) {
 }
 
 async function eliminarOC(rowNumber) {
-  if (!confirm('¿Eliminar esta orden de compra? Esta acción no se puede deshacer.')) return;
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  const nombreOc = oc ? oc.numero_oc : rowNumber;
+  const ok = await askConfirm(
+    `¿Estás seguro de eliminar la OC N° ${nombreOc}? Esta acción no se puede deshacer.`,
+    '¿Eliminar OC?'
+  );
+  if (!ok) return;
   try {
     const result = await apiCall('deleteOC', { rowNumber });
     if (result.success) {
@@ -1194,7 +1275,7 @@ function openDetalleModal(rowNumber) {
     <div><div class="k">Código</div><div class="v">${oc.codigo}</div></div>
     <div><div class="k">Descripción</div><div class="v">${oc.descripcion}</div></div>
     <div><div class="k">Cantidad total</div><div class="v mono">${Number(oc.cantidad_total||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
-    <div><div class="k">Stock en almacén</div><div class="v mono">${Number(oc.stock_almacen||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
+    <div><div class="k">Cant. Despachar</div><div class="v mono">${Number(oc.stock_almacen||0).toLocaleString('es-PE')} ${oc.unidad}</div></div>
     <div><div class="k">Fecha de inicio</div><div class="v mono">${oc.fecha_inicio}</div></div>
     <div><div class="k">Fecha de entrega (original)</div><div class="v mono">${oc.fecha_entrega}</div></div>
     <div><div class="k">Última fecha programada</div><div class="v mono">${oc.fecha_entrega_actualizada || 'Sin cambios'}</div></div>
@@ -1379,6 +1460,20 @@ async function submitFechaForm(ev) {
   }
 }
 
+/* ---------------- Confirmación genérica (Sí/No) ---------------- */
+let confirmResolver = null;
+
+function askConfirm(message, title = '¿Estás seguro?') {
+  document.getElementById('confirmModalTitle').textContent = title;
+  document.getElementById('confirmModalMessage').textContent = message;
+  document.getElementById('confirmModalOverlay').classList.remove('hidden');
+  return new Promise(resolve => { confirmResolver = resolve; });
+}
+function resolveConfirm(result) {
+  document.getElementById('confirmModalOverlay').classList.add('hidden');
+  if (confirmResolver) { confirmResolver(result); confirmResolver = null; }
+}
+
 /* ---------------- Exportar Excel ---------------- */
 function exportExcel() {
   const filtered = getFilteredOcs();
@@ -1396,7 +1491,7 @@ function exportExcel() {
     'Fecha entrega': oc.fecha_entrega,
     'Última fecha programada': oc.fecha_entrega_actualizada || '',
     'Estado': oc.estado,
-    'Stock almacén': oc.stock_almacen,
+    'Cant. Despachar': oc.stock_almacen,
     'Precio unitario (USD)': oc.precio_unitario,
     'Proveedor': oc.email_proveedor,
     'Retrasado': isRetrasado(oc) ? 'Sí' : 'No'
