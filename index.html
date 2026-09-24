@@ -676,7 +676,7 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyilJ7ByZSBgVZeLBwAZiPT46UnQlXytq-6AR9-VhIeFBoF6uBR1K1zTYkExkR37am7Xw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-K4qyua1vMlCO2-g0XbK9RpXreyUHsNnOua529mvV3wDGKofDx5IOiCuxoGZVcoNIwA/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -692,13 +692,32 @@ const ESTADO_CLASS = {
 };
 
 /* ---------------- API ---------------- */
-async function apiCall(action, params = {}) {
+async function apiCall(action, params = {}, timeoutMs = 25000) {
   const fd = new FormData();
   fd.append('action', action);
   Object.entries(params).forEach(([k, v]) => fd.append(k, v === undefined || v === null ? '' : v));
-  const res = await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow' });
-  if (!res.ok) throw new Error('Error de red: ' + res.status);
-  return res.json();
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow', signal: controller.signal });
+    if (!res.ok) throw new Error('Error de red: ' + res.status);
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (parseErr) {
+      // Google respondió, pero no con JSON (ej: página de error/consentimiento de Google).
+      console.error('[apiCall] Respuesta no era JSON. Primeros 300 caracteres:', text.slice(0, 300));
+      throw new Error('El servidor respondió algo inesperado (no JSON).');
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Se agotó el tiempo de espera (' + (timeoutMs / 1000) + 's) esperando respuesta de Apps Script.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /* ---------------- Sesión ---------------- */
@@ -745,7 +764,8 @@ document.getElementById('loginForm').addEventListener('submit', async (ev) => {
       errBox.style.display = 'block';
     }
   } catch (e) {
-    errBox.textContent = 'No se pudo conectar. Revisa la URL de Apps Script o tu conexión.';
+    console.error('[login] Error real:', e);
+    errBox.textContent = 'No se pudo conectar (' + (e.message || 'error desconocido') + '). Revisa la consola (F12).';
     errBox.style.display = 'block';
   } finally {
     btn.disabled = false;
@@ -847,7 +867,9 @@ function bindEvents() {
 }
 
 /* ---------------- Carga de datos ---------------- */
-async function loadOCs(silent = false) {
+function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function loadOCs(silent = false, _isRetry = false) {
   try {
     const result = await apiCall('getOCs', { email: currentUser.email, rol: currentUser.rol });
     if (result.success) {
@@ -859,8 +881,14 @@ async function loadOCs(silent = false) {
     }
   } catch (e) {
     console.error('[loadOCs] Error real:', e);
+    // Un solo reintento silencioso antes de molestar al usuario: muchas fallas de
+    // Apps Script son transitorias (congestión momentánea, "arranque en frío").
+    if (!_isRetry) {
+      await sleep(2500);
+      return loadOCs(silent, true);
+    }
     if (!silent) {
-      alert('Error de conexión al cargar las OCs. Revisa la consola (F12) para más detalle.');
+      alert('Error de conexión al cargar las OCs.\n\nDetalle: ' + (e.message || e) + '\n\n(Revisa también la consola con F12 para más información)');
     }
   }
 }
