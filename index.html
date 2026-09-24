@@ -731,7 +731,7 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzu0_wDNuiRipmGXTQYRnJtHC5ekuRdHH2X152ottM8gnPTRj88QIbCO4XzI5ov3DTm_g/exec';
+const SCRIPT_URL = 'PEGA_AQUI_TU_URL_DE_APPS_SCRIPT';
 
 let currentUser = null;
 let allOcs = [];
@@ -747,7 +747,7 @@ const ESTADO_CLASS = {
 };
 
 /* ---------------- API ---------------- */
-async function apiCall(action, params = {}, timeoutMs = 25000) {
+async function apiCall(action, params = {}, timeoutMs = 45000) {
   const fd = new FormData();
   fd.append('action', action);
   Object.entries(params).forEach(([k, v]) => fd.append(k, v === undefined || v === null ? '' : v));
