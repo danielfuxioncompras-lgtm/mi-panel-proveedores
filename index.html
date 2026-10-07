@@ -34,6 +34,7 @@
     --teal:#0FA9A0;
     --teal-bg:#E1F7F5;
     --row-hover:#F6F4FE;
+    --primary-text:#2B2A6B;
     --row-hover-retrasado:#F9DAD6;
   }
 
@@ -62,9 +63,14 @@
     --teal:#2FD9CE;
     --teal-bg:#0F3A38;
     --row-hover:#242642;
+    --primary-text:#C7C0FF;
+    color-scheme:dark;
     --row-hover-retrasado:#402420;
   }
   *{box-sizing:border-box;}
+  input, select, textarea{color:var(--ink);}
+  input::placeholder{color:var(--ink-soft);opacity:.85;}
+  select option{background:var(--surface);color:var(--ink);}
   body{
     margin:0;
     background:
@@ -265,7 +271,7 @@
     font-size:27px;
     font-weight:600;
     letter-spacing:-0.02em;
-    color:var(--primary);
+    color:var(--primary-text);
   }
   .card.c-kg .value{color:var(--info);}
   .card.c-mill .value{color:var(--accent);}
@@ -335,7 +341,7 @@
     padding:11px 12px;
     background:var(--neutral-bg);
     border-bottom:1px solid var(--border);
-    color:var(--primary);
+    color:var(--primary-text);
     font-weight:600;
     font-size:11.5px;
     white-space:nowrap;
@@ -429,7 +435,7 @@
     margin-bottom:18px;font-size:13px;
   }
   .detalle-info .k{color:var(--ink-soft);font-size:11px;margin-bottom:2px;}
-  .detalle-info .v{font-weight:600;color:var(--primary);}
+  .detalle-info .v{font-weight:600;color:var(--primary-text);}
   .entregas-list{list-style:none;margin:0 0 18px;padding:0;border:1px solid var(--border);}
   .entregas-list li{
     padding:9px 12px;font-size:12.5px;
@@ -439,6 +445,7 @@
   }
   .entregas-list li:last-child{border-bottom:none;}
   .entregas-empty{padding:14px;font-size:12.5px;color:var(--ink-soft);text-align:center;border:1px dashed var(--border);margin-bottom:18px;}
+  .entregas-list li{gap:4px 12px;flex-wrap:wrap;}
   h3.subhead{font-size:12.5px;text-transform:none;color:var(--ink-soft);font-weight:600;margin:0 0 10px;}
 
   /* ---------- Dashboard admin ---------- */
@@ -449,7 +456,7 @@
   }
   .dash-stat{background:var(--neutral-bg);padding:12px 13px;border:1px solid var(--border);}
   .dash-stat .k{font-size:10.5px;color:var(--ink-soft);margin-bottom:5px;}
-  .dash-stat .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:17px;color:var(--primary);}
+  .dash-stat .v{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:17px;color:var(--primary-text);}
   .dash-stat-danger{background:var(--danger-bg);}
   .dash-stat-danger .v{color:var(--danger);}
   .dash-bars{margin-bottom:26px;}
@@ -533,7 +540,7 @@
       </div>
       <div class="card c-mill">
         <div class="icon">🧮</div>
-        <div class="label">Total en Millares</div>
+        <div class="label">Total en Und</div>
         <div class="value" id="cardMill">0</div>
       </div>
       <div class="card c-alert">
@@ -609,7 +616,7 @@
             <label>Unidad</label>
             <select id="f_unidad" required>
               <option value="Kg">Kg</option>
-              <option value="Mill">Mill</option>
+              <option value="Und">Und</option>
             </select>
           </div>
         </div>
@@ -664,7 +671,11 @@
       <ul class="entregas-list hidden" id="entregasList"></ul>
       <div class="entregas-empty hidden" id="entregasEmpty">Aún no se han registrado entregas.</div>
 
-      <h3 class="subhead">Reprogramar fecha de entrega</h3>
+      <h3 class="subhead">Historial de modificaciones de fecha</h3>
+      <ul class="entregas-list hidden" id="fechasList"></ul>
+      <div class="entregas-empty hidden" id="fechasEmpty">Aún no se ha modificado la fecha de entrega.</div>
+
+      <h3 class="subhead" id="subFecha">Modificar fecha de entrega</h3>
       <form id="fechaForm">
         <input type="hidden" id="ff_rowNumber">
         <div class="grid-2">
@@ -673,12 +684,12 @@
             <input type="date" id="ff_nuevaFecha" required>
           </div>
           <div class="field field-btn">
-            <button type="submit" class="btn btn-outline btn-block" id="btnActualizarFecha">Actualizar fecha</button>
+            <button type="submit" class="btn btn-outline btn-block" id="btnActualizarFecha">Modificar fecha</button>
           </div>
         </div>
       </form>
 
-      <h3 class="subhead">Registrar nueva entrega</h3>
+      <h3 class="subhead" id="subEntrega">Registrar nueva entrega</h3>
       <form id="entregaForm">
         <input type="hidden" id="e_rowNumber">
         <div class="grid-2">
@@ -731,7 +742,7 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybBb2sS8JE51NnwNCcJMvFQ1MWFq0Y-hT7E5bKNrnPUJ8FRMscGyPbMZC0LBinffJGCQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtU1EFKgmFQySL4lVLO3eAItC4AdSeP02dPLBCT_qUG_CRxluPowkHk7t_peXi9uAQjA/exec';
 
 let currentUser = null;
 let allOcs = [];
@@ -787,6 +798,21 @@ function loadSession() {
 }
 function clearSession() {
   localStorage.removeItem('oc_session');
+  Object.keys(localStorage).filter(k => k.indexOf('oc_cache_') === 0).forEach(k => localStorage.removeItem(k));
+}
+
+// Copia local de las OCs: al abrir la app se muestra al instante y se actualiza por detrás.
+function cacheKey() { return 'oc_cache_' + (currentUser ? currentUser.email : ''); }
+function saveCache() { try { localStorage.setItem(cacheKey(), JSON.stringify(allOcs)); } catch (e) {} }
+function loadCache() {
+  try { const raw = localStorage.getItem(cacheKey()); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
+}
+
+let pendingWrites = 0; // cambios en camino al servidor (evita que una sincronización los pise)
+
+function nowLima() {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Lima', year: 'numeric', month: '2-digit',
+    day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -821,7 +847,13 @@ document.getElementById('loginForm').addEventListener('submit', async (ev) => {
     if (result.success) {
       currentUser = { email: result.email, nombre: result.nombre, rol: result.rol };
       saveSession(currentUser);
-      enterApp();
+      let precargado = false;
+      if (Array.isArray(result.ocs)) {
+        allOcs = result.ocs.map(normalizeOc);
+        saveCache();
+        precargado = true;
+      }
+      enterApp(precargado);
     } else {
       errBox.textContent = result.message || 'Correo o contraseña incorrectos.';
       errBox.style.display = 'block';
@@ -836,7 +868,7 @@ document.getElementById('loginForm').addEventListener('submit', async (ev) => {
   }
 });
 
-function enterApp() {
+function enterApp(precargado = false) {
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appScreen').classList.remove('hidden');
   document.getElementById('userName').textContent = currentUser.nombre;
@@ -846,7 +878,14 @@ function enterApp() {
     document.getElementById('btnDashboard').classList.remove('hidden');
   }
   renderTableHead();
-  loadOCs();
+  if (precargado) {
+    renderCards();
+    renderTable();
+  } else {
+    const cache = loadCache();
+    if (cache) { allOcs = cache.map(normalizeOc); renderCards(); renderTable(); }
+    loadOCs(!!cache); // si ya mostramos datos guardados, se refresca sin molestar
+  }
   startBackgroundSync();
 }
 
@@ -865,7 +904,7 @@ function startBackgroundSync() {
   // está en segundo plano (minimizada / otra pestaña activa), o si ya hay una sincronización en curso.
   setInterval(() => {
     if (document.hidden) return;
-    if (syncInFlight) return;
+    if (syncInFlight || pendingWrites > 0) return;
     if (isAnyModalOpen()) return;
     if (document.activeElement === document.getElementById('searchInput')) return;
     syncInFlight = true;
@@ -940,13 +979,33 @@ function bindEvents() {
 }
 
 /* ---------------- Carga de datos ---------------- */
+function stripAccents(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Deja los datos del Sheet "limpios": estados con espacios/mayúsculas raras o vacíos
+// cuentan como "Inicio", y la unidad antigua "Mill" se muestra como "Und".
+const ESTADO_MAP = {};
+ESTADOS.forEach(es => { ESTADO_MAP[stripAccents(es).toLowerCase()] = es; });
+
+function normalizeOc(o) {
+  o.estado = ESTADO_MAP[stripAccents(o.estado).trim().toLowerCase()] || 'Inicio';
+  const u = String(o.unidad || '').trim();
+  o.unidad = (u.toLowerCase() === 'mill') ? 'Und' : u;
+  o.detalle_entregas = String(o.detalle_entregas || '').replace(/\bMill\b/g, 'Und');
+  o.historial_fechas = String(o.historial_fechas || '');
+  return o;
+}
+
 function sleep(ms) { return new Promise(res => setTimeout(res, ms)); }
 
 async function loadOCs(silent = false, _isRetry = false) {
   try {
     const result = await apiCall('getOCs', { email: currentUser.email, rol: currentUser.rol });
     if (result.success) {
-      allOcs = result.ocs || [];
+      if (silent && pendingWrites > 0) return;
+      allOcs = (result.ocs || []).map(normalizeOc);
+      saveCache();
       renderCards();
       renderTable();
     } else if (!silent) {
@@ -979,7 +1038,7 @@ function isRetrasado(oc) {
 function renderCards() {
   const total = allOcs.length;
   const totalKg = allOcs.filter(o => o.unidad === 'Kg').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
-  const totalMill = allOcs.filter(o => o.unidad === 'Mill').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const totalMill = allOcs.filter(o => o.unidad === 'Und').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
   const retrasadas = allOcs.filter(isRetrasado).length;
 
   document.getElementById('cardTotal').textContent = total;
@@ -1087,6 +1146,7 @@ function renderTable() {
         <td class="mono">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
         <td>${oc.email_proveedor || ''}</td>
         <td class="row-actions row-actions-col">
+          <button class="icon-btn" title="Ver detalle e historial" onclick="openDetalleModal(${oc.rowNumber})">👁️</button>
           <button class="icon-btn" title="Editar" onclick="openOcModal(${oc.rowNumber})">✏️</button>
           <button class="icon-btn" title="Eliminar" onclick="eliminarOC(${oc.rowNumber})">🗑️</button>
         </td>`;
@@ -1128,6 +1188,7 @@ async function cambiarEstado(rowNumber, estado) {
     renderCards();
     renderTable();
   }
+  pendingWrites++;
   try {
     const result = await apiCall('updateEstado', { rowNumber, estado });
     if (!result.success) {
@@ -1137,6 +1198,8 @@ async function cambiarEstado(rowNumber, estado) {
   } catch (e) {
     alert('Error de conexión al actualizar el estado.');
     if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
+  } finally {
+    pendingWrites--;
   }
 }
 
@@ -1171,6 +1234,30 @@ function closeOcModal() {
   document.getElementById('ocModalOverlay').classList.add('hidden');
 }
 
+async function guardarEdicionOptimista(rowNumber, payload) {
+  const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+  const previo = idx > -1 ? { ...allOcs[idx] } : null;
+  if (idx > -1) {
+    allOcs[idx] = { ...allOcs[idx], ...payload,
+      cantidad_total: Number(payload.cantidad_total), precio_unitario: Number(payload.precio_unitario),
+      rowNumber: Number(rowNumber) };
+    normalizeOc(allOcs[idx]);
+  }
+  closeOcModal(); renderCards(); renderTable();
+  pendingWrites++;
+  try {
+    const result = await apiCall('updateOC', { ...payload, rowNumber });
+    if (!result.success) throw new Error(result.message || 'Error desconocido');
+  } catch (e) {
+    const i2 = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
+    if (i2 > -1 && previo) allOcs[i2] = previo;
+    renderCards(); renderTable();
+    alert('No se pudo guardar, se deshizo el cambio: ' + (e.message || e));
+  } finally {
+    pendingWrites--;
+  }
+}
+
 async function submitOcForm(ev) {
   ev.preventDefault();
   const rowNumber = document.getElementById('f_rowNumber').value;
@@ -1186,6 +1273,8 @@ async function submitOcForm(ev) {
     precio_unitario: document.getElementById('f_precio_unitario').value,
     email_proveedor: document.getElementById('f_email_proveedor').value.trim().toLowerCase()
   };
+
+  if (rowNumber) { await guardarEdicionOptimista(rowNumber, payload); return; }
 
   const btn = document.getElementById('ocModalSave');
   btn.disabled = true;
@@ -1301,6 +1390,32 @@ function openDetalleModal(rowNumber) {
     }).join('');
   }
 
+  // Historial de modificaciones de fecha: "2026-10-06 14:32 · 2026-10-15 → 2026-10-20 · Proveedor ABC"
+  const fList = document.getElementById('fechasList');
+  const fEmpty = document.getElementById('fechasEmpty');
+  const cambios = (oc.historial_fechas || '').split('|').map(s => s.trim()).filter(Boolean);
+  if (cambios.length === 0) {
+    fList.classList.add('hidden');
+    fEmpty.classList.remove('hidden');
+    fList.innerHTML = '';
+  } else {
+    fEmpty.classList.add('hidden');
+    fList.classList.remove('hidden');
+    fList.innerHTML = cambios.map(e => {
+      const p = e.split('·').map(x => x.trim());
+      const cuando = p[0] || '';
+      const cambio = p[1] || '';
+      const quien = p[2] || '';
+      return `<li><span>${cuando}${quien ? ' · ' + quien : ''}</span><span>${cambio}</span></li>`;
+    }).join('');
+  }
+
+  // El Admin solo consulta el historial; el Proveedor es quien modifica fecha y registra entregas.
+  const soloLectura = currentUser.rol === 'Admin';
+  ['subFecha', 'fechaForm', 'subEntrega', 'entregaForm'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', soloLectura);
+  });
+
   document.getElementById('detalleModalOverlay').classList.remove('hidden');
 }
 function closeDetalleModal() {
@@ -1311,33 +1426,71 @@ async function submitEntregaForm(ev) {
   ev.preventDefault();
   const rowNumber = document.getElementById('e_rowNumber').value;
   const fecha = document.getElementById('e_fecha').value;
-  const cantidad = document.getElementById('e_cantidad').value;
+  const cantidad = Number(document.getElementById('e_cantidad').value);
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  if (!oc || !fecha || !(cantidad > 0)) return;
 
-  const btn = document.getElementById('btnRegistrarEntrega');
-  btn.disabled = true;
-  btn.textContent = 'Registrando...';
+  const previo = { stock_almacen: oc.stock_almacen, detalle_entregas: oc.detalle_entregas, estado: oc.estado };
+  const nuevoStock = Number(oc.stock_almacen || 0) + cantidad;
+  const entrada = fecha + ': ' + cantidad + ' ' + oc.unidad;
+  oc.stock_almacen = nuevoStock;
+  oc.detalle_entregas = oc.detalle_entregas ? (oc.detalle_entregas + ' | ' + entrada) : entrada;
+  if (nuevoStock >= Number(oc.cantidad_total || 0)) oc.estado = 'Terminado';
+  closeDetalleModal(); renderCards(); renderTable();
+
+  pendingWrites++;
   try {
     const result = await apiCall('registrarEntrega', { rowNumber, fecha, cantidad });
-    if (result.success) {
-      const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
-      if (idx > -1) {
-        allOcs[idx].stock_almacen = Number(result.nuevoStock);
-        allOcs[idx].detalle_entregas = result.nuevoDetalle;
-        if (Number(result.nuevoStock) >= Number(allOcs[idx].cantidad_total)) {
-          allOcs[idx].estado = 'Terminado';
-        }
-      }
-      closeDetalleModal();
-      renderCards();
-      renderTable();
-    } else {
-      alert('No se pudo registrar la entrega: ' + (result.message || ''));
+    if (!result.success) throw new Error(result.message || 'Error desconocido');
+    const actual = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    if (actual) {
+      actual.stock_almacen = Number(result.nuevoStock);
+      actual.detalle_entregas = String(result.nuevoDetalle || '').replace(/\bMill\b/g, 'Und');
+      renderCards(); renderTable();
     }
   } catch (e) {
-    alert('Error de conexión al registrar la entrega.');
+    const actual = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    if (actual) Object.assign(actual, previo);
+    renderCards(); renderTable();
+    alert('No se pudo registrar la entrega, se deshizo el cambio: ' + (e.message || e));
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Registrar entrega';
+    pendingWrites--;
+  }
+}
+
+async function submitFechaForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('ff_rowNumber').value;
+  const nuevaFecha = document.getElementById('ff_nuevaFecha').value;
+  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  if (!oc || !nuevaFecha) return;
+
+  const fechaActual = oc.fecha_entrega_actualizada || oc.fecha_entrega;
+  if (nuevaFecha === fechaActual) {
+    alert('La nueva fecha es igual a la fecha actual (' + fechaActual + '). Elige una fecha distinta para modificarla.');
+    return;
+  }
+
+  const previo = { fecha_entrega_actualizada: oc.fecha_entrega_actualizada, historial_fechas: oc.historial_fechas };
+  const entrada = nowLima() + ' · ' + fechaActual + ' → ' + nuevaFecha + ' · ' + currentUser.nombre;
+  oc.fecha_entrega_actualizada = nuevaFecha;
+  oc.historial_fechas = oc.historial_fechas ? (oc.historial_fechas + ' | ' + entrada) : entrada;
+  renderCards(); renderTable(); openDetalleModal(rowNumber);
+
+  pendingWrites++;
+  try {
+    const result = await apiCall('actualizarFechaEntrega', { rowNumber, nuevaFecha, usuario: currentUser.nombre });
+    if (!result.success) throw new Error(result.message || 'Error desconocido');
+    const actual = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    if (actual && result.historial_fechas) actual.historial_fechas = result.historial_fechas;
+  } catch (e) {
+    const actual = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    if (actual) Object.assign(actual, previo);
+    renderCards(); renderTable();
+    if (!document.getElementById('detalleModalOverlay').classList.contains('hidden')) openDetalleModal(rowNumber);
+    alert('No se pudo modificar la fecha, se deshizo el cambio: ' + (e.message || e));
+  } finally {
+    pendingWrites--;
   }
 }
 
@@ -1345,7 +1498,7 @@ async function submitEntregaForm(ev) {
 function computeDashboardStats() {
   const totalOCs = allOcs.length;
   const totalKg = allOcs.filter(o => o.unidad === 'Kg').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
-  const totalMill = allOcs.filter(o => o.unidad === 'Mill').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
+  const totalMill = allOcs.filter(o => o.unidad === 'Und').reduce((s, o) => s + Number(o.cantidad_total || 0), 0);
   const valorTotal = allOcs.reduce((s, o) => s + Number(o.cantidad_total || 0) * Number(o.precio_unitario || 0), 0);
   const retrasadas = allOcs.filter(isRetrasado).length;
 
@@ -1361,7 +1514,7 @@ function computeDashboardStats() {
     const p = proveedoresMap[key];
     p.count++;
     if (o.unidad === 'Kg') p.kg += Number(o.cantidad_total || 0);
-    if (o.unidad === 'Mill') p.mill += Number(o.cantidad_total || 0);
+    if (o.unidad === 'Und') p.mill += Number(o.cantidad_total || 0);
     p.valor += Number(o.cantidad_total || 0) * Number(o.precio_unitario || 0);
     if (isRetrasado(o)) p.retrasadas++;
   });
@@ -1386,7 +1539,7 @@ function renderDashboardBody() {
       <div class="dash-stat"><div class="k">Total OCs</div><div class="v">${s.totalOCs}</div></div>
       <div class="dash-stat"><div class="k">Valor total (USD)</div><div class="v">$${s.valorTotal.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</div></div>
       <div class="dash-stat"><div class="k">Total Kg</div><div class="v">${s.totalKg.toLocaleString('es-PE')}</div></div>
-      <div class="dash-stat"><div class="k">Total Millares</div><div class="v">${s.totalMill.toLocaleString('es-PE')}</div></div>
+      <div class="dash-stat"><div class="k">Total Und</div><div class="v">${s.totalMill.toLocaleString('es-PE')}</div></div>
       <div class="dash-stat dash-stat-danger"><div class="k">Retrasadas</div><div class="v">${s.retrasadas}</div></div>
     </div>`;
 
@@ -1406,7 +1559,7 @@ function renderDashboardBody() {
     <div class="table-wrap dash-table-wrap">
       <table>
         <thead><tr>
-          <th>Proveedor</th><th>OCs</th><th>Kg</th><th>Mill</th><th>Valor (USD)</th><th>Retrasadas</th>
+          <th>Proveedor</th><th>OCs</th><th>Kg</th><th>Und</th><th>Valor (USD)</th><th>Retrasadas</th>
         </tr></thead>
         <tbody>
           ${s.porProveedor.map(p => `
@@ -1433,32 +1586,6 @@ function closeDashboardModal() {
   document.getElementById('dashboardModalOverlay').classList.add('hidden');
 }
 
-async function submitFechaForm(ev) {
-  ev.preventDefault();
-  const rowNumber = document.getElementById('ff_rowNumber').value;
-  const nuevaFecha = document.getElementById('ff_nuevaFecha').value;
-
-  const btn = document.getElementById('btnActualizarFecha');
-  btn.disabled = true;
-  btn.textContent = 'Actualizando...';
-  try {
-    const result = await apiCall('actualizarFechaEntrega', { rowNumber, nuevaFecha });
-    if (result.success) {
-      const idx = allOcs.findIndex(o => Number(o.rowNumber) === Number(rowNumber));
-      if (idx > -1) allOcs[idx].fecha_entrega_actualizada = nuevaFecha;
-      renderCards();
-      renderTable();
-      openDetalleModal(rowNumber); // refresca la info dentro del mismo modal
-    } else {
-      alert('No se pudo actualizar la fecha: ' + (result.message || ''));
-    }
-  } catch (e) {
-    alert('Error de conexión al actualizar la fecha.');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Actualizar fecha';
-  }
-}
 
 /* ---------------- Confirmación genérica (Sí/No) ---------------- */
 let confirmResolver = null;
@@ -1490,6 +1617,7 @@ function exportExcel() {
     'Fecha inicio': oc.fecha_inicio,
     'Fecha entrega': oc.fecha_entrega,
     'Última fecha programada': oc.fecha_entrega_actualizada || '',
+    'Historial de fechas': oc.historial_fechas || '',
     'Estado': oc.estado,
     'Cant. Despachar': oc.stock_almacen,
     'Precio unitario (USD)': oc.precio_unitario,
