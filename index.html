@@ -224,9 +224,9 @@
   header.app-header .theme-toggle:hover{background:rgba(255,255,255,.1);}
 
   main{
-    max-width:1600px;
+    max-width:1680px;
     margin:0 auto;
-    padding:24px 32px;
+    padding:24px 24px;
   }
 
   /* ---------- Dashboard cards ---------- */
@@ -335,22 +335,24 @@
     overflow-x:auto;
     box-shadow:0 16px 40px -28px rgba(43,42,107,.4);
   }
-  table{width:100%;border-collapse:collapse;font-size:13px;min-width:1150px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:1100px;}
   thead th{
     text-align:left;
-    padding:11px 12px;
+    padding:10px 8px;
     background:var(--neutral-bg);
     border-bottom:1px solid var(--border);
     color:var(--primary-text);
     font-weight:600;
     font-size:11.5px;
-    white-space:nowrap;
+    white-space:normal;
+    line-height:1.25;
+    vertical-align:bottom;
   }
   thead th.th-sortable{cursor:pointer;user-select:none;}
   thead th.th-sortable:hover{color:var(--accent);}
   thead th.th-active{color:var(--accent);}
   tbody td{
-    padding:10px 12px;
+    padding:10px 8px;
     border-bottom:1px solid var(--border);
     vertical-align:middle;
   }
@@ -374,7 +376,7 @@
     border:1px solid transparent;
     background:var(--surface);
     color:var(--ink);
-    min-width:132px;
+    min-width:122px;
     cursor:pointer;
   }
   select.estado-select.est-inicio{background:var(--neutral-bg);color:var(--neutral);border-color:#DDD0F5;}
@@ -472,6 +474,50 @@
   .dash-table-wrap{box-shadow:none;}
   .dash-table-wrap table{min-width:0;}
 
+  /* ---------- Pestañas, insignias, cumplimiento ---------- */
+  .tabs{display:flex;gap:4px;margin:0 0 22px;border-bottom:1px solid var(--border);overflow-x:auto;}
+  .tab{background:none;border:none;padding:11px 18px;font-family:inherit;font-size:13.5px;font-weight:600;
+    color:var(--ink-soft);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap;}
+  .tab:hover{color:var(--primary2);}
+  .tab.active{color:var(--primary-text);border-bottom-color:var(--primary2);}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:3px 9px;white-space:nowrap;border:1px dashed transparent;}
+  .badge small{font-weight:500;opacity:.8;}
+  .badge-ok{background:var(--success-bg);color:var(--success);}
+  .badge-late{background:var(--danger-bg);color:var(--danger);}
+  .badge-na{background:var(--neutral-bg);color:var(--ink-soft);}
+  .badge-open{background:var(--warning-bg);color:var(--warning);}
+  .badge.clickable{cursor:pointer;}
+  .badge.clickable:hover{border-color:currentColor;}
+  .estado-static{display:inline-block;font-size:12.5px;font-weight:600;padding:6px 10px;min-width:122px;}
+  .estado-static.est-terminado{background:var(--success-bg);color:var(--success);}
+  .inline-select{padding:9px 10px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-family:inherit;font-size:13px;}
+  .cards.cards-6{grid-template-columns:repeat(6,1fr);}
+  .card.c-ok::before{background:var(--success);}
+  .card.c-ok .icon{background:var(--success-bg);color:var(--success);}
+  .card.c-ok .value{color:var(--success);}
+  .card.c-warn::before{background:var(--warning);}
+  .card.c-warn .icon{background:var(--warning-bg);color:var(--warning);}
+  .card.c-warn .value{color:var(--warning);}
+  .card .value.sm{font-size:22px;}
+  td.mono{white-space:nowrap;}
+  #tableBody td:nth-child(3){min-width:150px;}
+  .pct-bar{height:8px;background:var(--border);min-width:90px;}
+  .pct-fill{height:100%;background:var(--success);}
+  .pct-fill.mid{background:var(--warning);}
+  .pct-fill.low{background:var(--danger);}
+  .pct-cell{display:flex;align-items:center;gap:8px;}
+  .pct-cell b{font-family:'IBM Plex Mono',monospace;min-width:38px;}
+  .nota-pie{font-size:12px;color:var(--ink-soft);margin:12px 2px 0;}
+  #cumplRanking{margin-bottom:22px;}
+  .cumpl-box{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px 16px;padding:12px 14px;background:var(--neutral-bg);
+    border:1px solid var(--border);margin-bottom:10px;font-size:13px;}
+  .cumpl-box .k{color:var(--ink-soft);font-size:11px;margin-bottom:3px;}
+  .cumpl-box .v{font-weight:600;}
+  .cumpl-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;}
+  .cumpl-actions .btn{padding:7px 11px;font-size:12.5px;}
+  @media (max-width:1100px){.cards.cards-6{grid-template-columns:repeat(3,1fr);}}
+  @media (max-width:720px){.cards.cards-6{grid-template-columns:repeat(2,1fr);} .cumpl-box{grid-template-columns:1fr 1fr;}}
+
   /* ---------- Print ---------- */
   @media print{
     header.app-header, .toolbar, .cards, .row-actions-col, .no-print{display:none !important;}
@@ -527,6 +573,13 @@
   </header>
 
   <main>
+    <nav class="tabs no-print" id="tabsNav">
+      <button class="tab active" data-view="ordenes">📋 Órdenes</button>
+      <button class="tab" data-view="cumplimiento" id="tabCumpl">✅ Cumplimiento</button>
+      <button class="tab" data-view="proyectado">📈 Proyectado</button>
+    </nav>
+
+    <section id="viewOrdenes">
     <div class="cards">
       <div class="card">
         <div class="icon">📦</div>
@@ -571,6 +624,7 @@
       </div>
     </div>
 
+    <div class="no-print" id="timingInfo" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);margin:0 0 8px;min-height:14px;"></div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -580,8 +634,63 @@
       </table>
       <div class="empty-state hidden" id="emptyState">No hay órdenes de compra que coincidan con la búsqueda.</div>
     </div>
+    </section>
+
+    <!-- ===== Vista: Cumplimiento ===== -->
+    <section id="viewCumplimiento" class="hidden">
+      <div class="toolbar">
+        <select id="cumplProv" class="inline-select hidden"></select>
+        <select id="cumplMes" class="inline-select"></select>
+        <select id="cumplFiltro" class="inline-select">
+          <option value="">Todos los resultados</option>
+          <option value="A tiempo">✔ A tiempo</option>
+          <option value="Retraso">⚠ Con retraso</option>
+          <option value="Vencida">⏳ Vencidas sin cerrar</option>
+          <option value="Sin dato">Sin dato</option>
+        </select>
+        <div class="toolbar-actions no-print">
+          <button class="btn btn-outline" id="btnExportCumpl">Exportar Excel</button>
+          <button class="btn btn-outline" id="btnPrintCumpl">Imprimir / PDF</button>
+        </div>
+      </div>
+      <div class="cards cards-6" id="cumplCards"></div>
+      <div id="cumplRanking"></div>
+      <h3 class="subhead" id="cumplTitulo">Historial de cumplimiento</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr id="cumplHead"></tr></thead>
+          <tbody id="cumplBody"></tbody>
+        </table>
+        <div class="empty-state hidden" id="cumplEmpty">No hay órdenes para este filtro.</div>
+      </div>
+      <p class="nota-pie">El cumplimiento se mide contra la <b>fecha original pactada</b>. Una OC cuenta como "A tiempo" si se entregó completa en esa fecha o antes.</p>
+    </section>
+
+    <!-- ===== Vista: Proyectado ===== -->
+    <section id="viewProyectado" class="hidden">
+      <div class="toolbar">
+        <select id="proyProv" class="inline-select hidden"></select>
+        <select id="proyMes" class="inline-select"></select>
+        <div class="toolbar-actions no-print">
+          <button class="btn btn-outline" id="btnExportProy">Exportar Excel</button>
+          <button class="btn btn-outline" id="btnPrintProy">Imprimir / PDF</button>
+          <button class="btn btn-accent hidden" id="btnNuevaProy">+ Nueva proyección</button>
+        </div>
+      </div>
+      <div class="cards" id="proyCards"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr id="proyHead"></tr></thead>
+          <tbody id="proyBody"></tbody>
+        </table>
+        <div class="empty-state hidden" id="proyEmpty">No hay compras proyectadas para este filtro.</div>
+      </div>
+      <p class="nota-pie">Son compras <b>posibles</b> que se tienen proyectadas; no son órdenes de compra confirmadas.</p>
+    </section>
   </main>
 </div>
+
+<datalist id="listaProveedores"></datalist>
 
 <!-- ============ MODAL: Nueva/Editar OC ============ -->
 <div class="modal-overlay hidden" id="ocModalOverlay">
@@ -647,7 +756,7 @@
         </div>
         <div class="field">
           <label>Correo del proveedor</label>
-          <input type="email" id="f_email_proveedor" required placeholder="proveedor@ejemplo.com">
+          <input type="email" id="f_email_proveedor" required placeholder="proveedor@ejemplo.com" list="listaProveedores">
         </div>
       </div>
       <div class="modal-footer">
@@ -667,6 +776,7 @@
     </div>
     <div class="modal-body">
       <div class="detalle-info" id="detalleInfo"></div>
+      <div id="detalleCumplimiento"></div>
       <h3 class="subhead">Historial de entregas</h3>
       <ul class="entregas-list hidden" id="entregasList"></ul>
       <div class="entregas-empty hidden" id="entregasEmpty">Aún no se han registrado entregas.</div>
@@ -719,6 +829,65 @@
   </div>
 </div>
 
+<!-- ============ MODAL: Proyección (Admin) ============ -->
+<div class="modal-overlay hidden" id="proyModalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="proyModalTitle">Nueva compra proyectada</h2>
+      <button class="modal-close" id="proyModalClose">✕</button>
+    </div>
+    <form id="proyForm">
+      <div class="modal-body">
+        <input type="hidden" id="p_rowNumber">
+        <div class="grid-2">
+          <div class="field">
+            <label>Proveedor (correo)</label>
+            <input type="text" id="p_email" required list="listaProveedores" placeholder="proveedor@ejemplo.com">
+          </div>
+          <div class="field">
+            <label>Mes proyectado</label>
+            <input type="month" id="p_mes" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Código (opcional)</label>
+            <input type="text" id="p_codigo">
+          </div>
+          <div class="field">
+            <label>Descripción</label>
+            <input type="text" id="p_descripcion" required>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Cantidad</label>
+            <input type="number" id="p_cantidad" min="0" step="0.01" required>
+          </div>
+          <div class="field">
+            <label>Unidad</label>
+            <select id="p_unidad"><option value="Kg">Kg</option><option value="Und">Und</option></select>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Precio estimado unitario (USD)</label>
+            <input type="number" id="p_precio" min="0" step="0.01" value="0">
+          </div>
+          <div class="field">
+            <label>Nota (opcional)</label>
+            <input type="text" id="p_nota">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" id="proyModalCancel">Cancelar</button>
+        <button type="submit" class="btn btn-accent" id="proyModalSave">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- ============ MODAL: Confirmación genérica (Sí/No) ============ -->
 <div class="modal-overlay hidden" id="confirmModalOverlay">
   <div class="modal" style="max-width:400px;">
@@ -742,12 +911,16 @@
    Pega aquí la URL de tu Apps Script publicado como Web App
    (Implementar > Nueva implementación > Aplicación web)
 ========================================================= */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxtU1EFKgmFQySL4lVLO3eAItC4AdSeP02dPLBCT_qUG_CRxluPowkHk7t_peXi9uAQjA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx0XE26aOLj9ns4M0rCC653nApYYI6DelT8dk0QUA8Ryfs-ZqcP-xejVJzxV41GQhZU/exec';
 
 let currentUser = null;
 let allOcs = [];
 let currentFilter = 'Todos';
 let searchTerm = '';
+let allProy = [];
+let listaProv = [];
+let currentView = 'ordenes';
+const ESTADOS_PROVEEDOR = ['Por Entregar', 'Terminado'];
 
 const ESTADOS = ['Inicio', 'En Producción', 'Por Entregar', 'Terminado'];
 const ESTADO_CLASS = {
@@ -758,19 +931,40 @@ const ESTADO_CLASS = {
 };
 
 /* ---------------- API ---------------- */
+// Medidor: "total" = lo que esperas tú; "script" = lo que tardó el código en Google.
+// Si total es alto y script es bajo, la demora es de Google/la red (no de la hoja ni del código).
+function mostrarTiempo(action, total, script) {
+  console.log('[tiempo]', action, 'total ' + total.toFixed(2) + 's', script != null ? 'script ' + script.toFixed(2) + 's' : '');
+  const el = document.getElementById('timingInfo');
+  if (el) el.textContent = '⏱ ' + action + ': total ' + total.toFixed(1) + ' s' + (script != null ? ' · script ' + script.toFixed(1) + ' s' : '');
+}
+let sesionCaida = false;
+function sesionExpirada() {
+  if (sesionCaida) return;
+  sesionCaida = true;
+  clearSession();
+  alert('Tu sesión expiró o ya no es válida. Vuelve a iniciar sesión.');
+  location.reload();
+}
+
 async function apiCall(action, params = {}, timeoutMs = 45000) {
   const fd = new FormData();
   fd.append('action', action);
+  if (action !== 'login' && currentUser && currentUser.token) fd.append('token', currentUser.token);
   Object.entries(params).forEach(([k, v]) => fd.append(k, v === undefined || v === null ? '' : v));
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
+    const t0 = performance.now();
     const res = await fetch(SCRIPT_URL, { method: 'POST', body: fd, redirect: 'follow', signal: controller.signal });
     if (!res.ok) throw new Error('Error de red: ' + res.status);
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const out = JSON.parse(text);
+      if (out && out.code === 'AUTH') sesionExpirada();
+      mostrarTiempo(action, (performance.now() - t0) / 1000, out && out._ms != null ? out._ms / 1000 : null);
+      return out;
     } catch (parseErr) {
       // Google respondió, pero no con JSON (ej: página de error/consentimiento de Google).
       console.error('[apiCall] Respuesta no era JSON. Primeros 300 caracteres:', text.slice(0, 300));
@@ -818,9 +1012,11 @@ function nowLima() {
 window.addEventListener('DOMContentLoaded', () => {
   applyTheme(localStorage.getItem('oc_theme') || 'light');
   const saved = loadSession();
-  if (saved && saved.email && saved.rol) {
+  if (saved && saved.email && saved.rol && saved.token) {
     currentUser = saved;
     enterApp();
+  } else if (saved) {
+    clearSession(); // sesión antigua sin token: hay que entrar de nuevo
   }
   bindEvents();
 });
@@ -845,8 +1041,13 @@ document.getElementById('loginForm').addEventListener('submit', async (ev) => {
   try {
     const result = await apiCall('login', { email, password });
     if (result.success) {
-      currentUser = { email: result.email, nombre: result.nombre, rol: result.rol };
+      currentUser = { email: result.email, nombre: result.nombre, rol: result.rol, token: result.token };
       saveSession(currentUser);
+      if (Array.isArray(result.proy)) allProy = result.proy;
+      if (Array.isArray(result.proveedores)) {
+        listaProv = result.proveedores;
+        try { localStorage.setItem('oc_proveedores', JSON.stringify(listaProv)); } catch (e) {}
+      }
       let precargado = false;
       if (Array.isArray(result.ocs)) {
         allOcs = result.ocs.map(normalizeOc);
@@ -873,10 +1074,15 @@ function enterApp(precargado = false) {
   document.getElementById('appScreen').classList.remove('hidden');
   document.getElementById('userName').textContent = currentUser.nombre;
   document.getElementById('userRol').textContent = currentUser.rol;
-  if (currentUser.rol === 'Admin') {
-    document.getElementById('btnNuevaOC').classList.remove('hidden');
-    document.getElementById('btnDashboard').classList.remove('hidden');
+  const esAdmin = currentUser.rol === 'Admin';
+  ['btnNuevaOC', 'btnDashboard', 'btnNuevaProy'].forEach(id => {
+    document.getElementById(id).classList.toggle('hidden', !esAdmin);
+  });
+  document.getElementById('tabCumpl').textContent = esAdmin ? '✅ Cumplimiento' : '✅ Mi cumplimiento';
+  if (!listaProv.length) {
+    try { listaProv = JSON.parse(localStorage.getItem('oc_proveedores') || '[]'); } catch (e) { listaProv = []; }
   }
+  llenarListaProveedores();
   renderTableHead();
   if (precargado) {
     renderCards();
@@ -886,22 +1092,20 @@ function enterApp(precargado = false) {
     if (cache) { allOcs = cache.map(normalizeOc); renderCards(); renderTable(); }
     loadOCs(!!cache); // si ya mostramos datos guardados, se refresca sin molestar
   }
+  showView('ordenes');
   startBackgroundSync();
 }
 
 function isAnyModalOpen() {
-  return !document.getElementById('ocModalOverlay').classList.contains('hidden') ||
-         !document.getElementById('detalleModalOverlay').classList.contains('hidden') ||
-         !document.getElementById('dashboardModalOverlay').classList.contains('hidden') ||
-         !document.getElementById('confirmModalOverlay').classList.contains('hidden');
+  return ['ocModalOverlay', 'detalleModalOverlay', 'dashboardModalOverlay', 'confirmModalOverlay', 'proyModalOverlay']
+    .some(id => !document.getElementById(id).classList.contains('hidden'));
 }
 
 let syncInFlight = false;
 
 function startBackgroundSync() {
-  // Trae cambios de otros usuarios (proveedores/admin) sin que el usuario tenga que hacer nada.
-  // No interrumpe si hay un modal abierto, si está escribiendo en el buscador, si la pestaña
-  // está en segundo plano (minimizada / otra pestaña activa), o si ya hay una sincronización en curso.
+  // Trae cambios de otros usuarios sin que tengas que hacer nada. No interrumpe si hay un modal abierto,
+  // si estás escribiendo en el buscador, si la pestaña está en segundo plano o si hay cambios en camino.
   setInterval(() => {
     if (document.hidden) return;
     if (syncInFlight || pendingWrites > 0) return;
@@ -909,6 +1113,7 @@ function startBackgroundSync() {
     if (document.activeElement === document.getElementById('searchInput')) return;
     syncInFlight = true;
     loadOCs(true).finally(() => { syncInFlight = false; });
+    if (currentView === 'proyectado') loadProy(true);
   }, 180000);
 }
 
@@ -976,6 +1181,21 @@ function bindEvents() {
   document.getElementById('confirmModalYes').addEventListener('click', () => resolveConfirm(true));
   document.getElementById('confirmModalNo').addEventListener('click', () => resolveConfirm(false));
   document.getElementById('confirmModalClose').addEventListener('click', () => resolveConfirm(false));
+
+  document.getElementById('tabsNav').addEventListener('click', (e) => {
+    const b = e.target.closest('.tab');
+    if (b) showView(b.dataset.view);
+  });
+  ['cumplProv', 'cumplMes', 'cumplFiltro'].forEach(id => document.getElementById(id).addEventListener('change', renderCumplimiento));
+  ['proyProv', 'proyMes'].forEach(id => document.getElementById(id).addEventListener('change', renderProyectado));
+  document.getElementById('btnExportCumpl').addEventListener('click', exportCumplimiento);
+  document.getElementById('btnPrintCumpl').addEventListener('click', () => window.print());
+  document.getElementById('btnExportProy').addEventListener('click', exportProy);
+  document.getElementById('btnPrintProy').addEventListener('click', () => window.print());
+  document.getElementById('btnNuevaProy').addEventListener('click', () => openProyModal(null));
+  document.getElementById('proyModalClose').addEventListener('click', closeProyModal);
+  document.getElementById('proyModalCancel').addEventListener('click', closeProyModal);
+  document.getElementById('proyForm').addEventListener('submit', submitProyForm);
 }
 
 /* ---------------- Carga de datos ---------------- */
@@ -994,6 +1214,10 @@ function normalizeOc(o) {
   o.unidad = (u.toLowerCase() === 'mill') ? 'Und' : u;
   o.detalle_entregas = String(o.detalle_entregas || '').replace(/\bMill\b/g, 'Und');
   o.historial_fechas = String(o.historial_fechas || '');
+  o.fecha_cierre = String(o.fecha_cierre || '');
+  o.cumplimiento = String(o.cumplimiento || '');
+  o.dias_retraso = (o.dias_retraso === '' || o.dias_retraso == null) ? '' : Number(o.dias_retraso);
+  o.cumplimiento_manual = String(o.cumplimiento_manual || '');
   return o;
 }
 
@@ -1008,6 +1232,7 @@ async function loadOCs(silent = false, _isRetry = false) {
       saveCache();
       renderCards();
       renderTable();
+      if (currentView === 'cumplimiento') renderCumplimiento();
     } else if (!silent) {
       alert('No se pudieron cargar las OCs: ' + (result.message || ''));
     }
@@ -1063,6 +1288,7 @@ function getColumnDefs() {
   cols.push({ label: 'Fecha entrega', key: 'fecha_entrega', type: 'str' });
   cols.push({ label: 'Últ. fecha programada', key: 'fecha_entrega_actualizada', type: 'str' });
   cols.push({ label: 'Estado', key: 'estado', type: 'str' });
+  cols.push({ label: 'Cumplimiento', key: 'cumplimiento', type: 'str' });
   cols.push({ label: 'Cant. Despachar', key: 'stock_almacen', type: 'num' });
   if (isAdmin) {
     cols.push({ label: 'Precio unit. (USD)', key: 'precio_unitario', type: 'num' });
@@ -1115,6 +1341,30 @@ function getFilteredOcs() {
   return filtered;
 }
 
+function badgeCumplimiento(oc, clickable) {
+  if (oc.estado !== 'Terminado') return '<span style="color:var(--ink-soft)">—</span>';
+  let cls, txt;
+  if (oc.cumplimiento === 'A tiempo') { cls = 'badge-ok'; txt = '✔ A tiempo'; }
+  else if (oc.cumplimiento === 'Retraso') { cls = 'badge-late'; txt = '⚠ Retraso' + (oc.dias_retraso > 0 ? ' ' + oc.dias_retraso + ' d' : ''); }
+  else { cls = 'badge-na'; txt = 'Sin dato'; }
+  const manual = oc.cumplimiento_manual === 'Sí' ? ' <small title="Resultado marcado por el administrador">(Admin)</small>' : '';
+  const attrs = clickable ? ` title="Clic para cambiar el resultado" onclick="toggleCumplimiento(${oc.rowNumber})"` : '';
+  return `<span class="badge ${cls}${clickable ? ' clickable' : ''}"${attrs}>${txt}${manual}</span>`;
+}
+
+function renderEstadoCell(oc, isAdmin) {
+  const estadoClass = ESTADO_CLASS[oc.estado] || '';
+  if (isAdmin) {
+    const opts = ESTADOS.map(es => `<option value="${es}" ${es === oc.estado ? 'selected' : ''}>${es}</option>`).join('');
+    return `<select class="estado-select ${estadoClass}" onchange="cambiarEstado(${oc.rowNumber}, this.value)">${opts}</select>`;
+  }
+  // Proveedor: solo puede pasar a "Por Entregar" o "Terminado"
+  if (oc.estado === 'Terminado') return `<span class="estado-static ${estadoClass}">Terminado</span>`;
+  const opts = [`<option value="${oc.estado}" selected disabled>${oc.estado}</option>`]
+    .concat(ESTADOS_PROVEEDOR.filter(es => es !== oc.estado).map(es => `<option value="${es}">${es}</option>`)).join('');
+  return `<select class="estado-select ${estadoClass}" onchange="cambiarEstado(${oc.rowNumber}, this.value)">${opts}</select>`;
+}
+
 function renderTable() {
   const isAdmin = currentUser.rol === 'Admin';
   const filtered = getFilteredOcs();
@@ -1130,21 +1380,11 @@ function renderTable() {
 
   tbody.innerHTML = filtered.map(oc => {
     const retrasado = isRetrasado(oc);
-    const estadoClass = ESTADO_CLASS[oc.estado] || '';
-    const estadoOptions = ESTADOS.map(es =>
-      `<option value="${es}" ${es === oc.estado ? 'selected' : ''}>${es}</option>`
-    ).join('');
-
-    const estadoCell = `
-      <select class="estado-select ${estadoClass}" data-row="${oc.rowNumber}" onchange="cambiarEstado(${oc.rowNumber}, this.value)">
-        ${estadoOptions}
-      </select>`;
-
     let lastCols;
     if (isAdmin) {
       lastCols = `
         <td class="mono">$${Number(oc.precio_unitario || 0).toFixed(2)}</td>
-        <td>${oc.email_proveedor || ''}</td>
+        <td title="${oc.email_proveedor || ''}">${nombreProv(oc.email_proveedor)}</td>
         <td class="row-actions row-actions-col">
           <button class="icon-btn" title="Ver detalle e historial" onclick="openDetalleModal(${oc.rowNumber})">👁️</button>
           <button class="icon-btn" title="Editar" onclick="openOcModal(${oc.rowNumber})">✏️</button>
@@ -1167,7 +1407,8 @@ function renderTable() {
         ${isAdmin ? '' : `<td class="mono">${oc.fecha_inicio || ''}</td>`}
         <td class="mono">${oc.fecha_entrega || ''}${retrasado ? '<span class="tag">Retrasado</span>' : ''}</td>
         <td class="mono">${oc.fecha_entrega_actualizada ? oc.fecha_entrega_actualizada : '<span style="color:var(--ink-soft)">—</span>'}</td>
-        <td>${estadoCell}</td>
+        <td>${renderEstadoCell(oc, isAdmin)}</td>
+        <td>${badgeCumplimiento(oc, isAdmin)}</td>
         <td class="mono">${Number(oc.stock_almacen || 0).toLocaleString('es-PE')}</td>
         ${lastCols}
       </tr>`;
@@ -1175,29 +1416,107 @@ function renderTable() {
 }
 
 /* ---------------- Cambiar estado ---------------- */
+function ocPorFila(rowNumber) {
+  return allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+}
+function hoyLimaStr() { return nowLima().slice(0, 10); }
+function diasEntreStr(a, b) {
+  const x = Date.parse(a + 'T00:00:00Z'), y = Date.parse(b + 'T00:00:00Z');
+  return (isNaN(x) || isNaN(y)) ? 0 : Math.round((y - x) / 86400000);
+}
+// Misma regla que el servidor: se compara el cierre contra la fecha ORIGINAL pactada.
+function aplicarCierreLocal(oc, cierrePorDefecto) {
+  if (oc.estado !== 'Terminado') { oc.fecha_cierre = ''; oc.cumplimiento = ''; oc.dias_retraso = ''; oc.cumplimiento_manual = ''; return; }
+  const cierre = oc.fecha_cierre || cierrePorDefecto || '';
+  oc.fecha_cierre = cierre;
+  const manual = oc.cumplimiento_manual === 'Sí';
+  if (cierre) {
+    const dias = diasEntreStr(oc.fecha_entrega, cierre);
+    if (manual) oc.dias_retraso = oc.cumplimiento === 'Retraso' ? Math.max(0, dias) : 0;
+    else { oc.cumplimiento = dias > 0 ? 'Retraso' : 'A tiempo'; oc.dias_retraso = Math.max(0, dias); }
+  } else if (manual) {
+    oc.dias_retraso = oc.cumplimiento === 'Retraso' ? '' : 0;
+  } else { oc.cumplimiento = ''; oc.dias_retraso = ''; }
+}
+function aplicarRespuesta(oc, r) {
+  ['fecha_cierre', 'cumplimiento', 'dias_retraso', 'cumplimiento_manual'].forEach(k => { if (r[k] !== undefined) oc[k] = r[k]; });
+  if (r.estado) oc.estado = r.estado;
+  if (r.stock_almacen !== undefined) oc.stock_almacen = Number(r.stock_almacen);
+  if (r.nuevoStock !== undefined) oc.stock_almacen = Number(r.nuevoStock);
+  if (r.nuevoDetalle !== undefined) oc.detalle_entregas = String(r.nuevoDetalle).replace(/\bMill\b/g, 'Und');
+}
+function refrescarTodo(rowDetalle) {
+  renderCards(); renderTable();
+  if (currentView === 'cumplimiento') renderCumplimiento();
+  if (rowDetalle && !document.getElementById('detalleModalOverlay').classList.contains('hidden')) openDetalleModal(rowDetalle);
+}
+
 async function cambiarEstado(rowNumber, estado) {
   if (!estado) return;
-  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
-  const estadoPrevio = oc ? oc.estado : null;
-  const stockPrevio = oc ? oc.stock_almacen : null;
-
-  // Actualización optimista: se ve el cambio de inmediato, sin esperar al servidor
-  if (oc) {
-    oc.estado = estado;
-    if (estado === 'Terminado') oc.stock_almacen = Number(oc.cantidad_total);
-    renderCards();
-    renderTable();
+  const oc = ocPorFila(rowNumber);
+  if (!oc) return;
+  const esAdmin = currentUser.rol === 'Admin';
+  if (!esAdmin && ESTADOS_PROVEEDOR.indexOf(estado) === -1) { renderTable(); return; }
+  if (!esAdmin && estado === 'Terminado') {
+    const ok = await askConfirm('¿Marcar la OC N° ' + oc.numero_oc + ' como TERMINADA (entregada)? Se cerrará con la fecha de hoy y ya no podrás cambiarla.', 'Confirmar entrega');
+    if (!ok) { renderTable(); return; }
   }
+
+  const previo = { ...oc };
+  const estabaTerminada = oc.estado === 'Terminado';
+  oc.estado = estado;
+  if (estado === 'Terminado' && !estabaTerminada) {
+    oc.stock_almacen = Number(oc.cantidad_total);
+    oc.fecha_cierre = ''; oc.cumplimiento_manual = '';
+    aplicarCierreLocal(oc, hoyLimaStr());
+  } else {
+    aplicarCierreLocal(oc, null);
+  }
+  renderCards(); renderTable();
+
   pendingWrites++;
   try {
     const result = await apiCall('updateEstado', { rowNumber, estado });
-    if (!result.success) {
-      alert('No se pudo actualizar el estado: ' + (result.message || ''));
-      if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
-    }
+    if (!result.success) throw new Error(result.message || 'Error desconocido');
+    const actual = ocPorFila(rowNumber);
+    if (actual) { aplicarRespuesta(actual, result); renderCards(); renderTable(); }
   } catch (e) {
-    alert('Error de conexión al actualizar el estado.');
-    if (oc) { oc.estado = estadoPrevio; oc.stock_almacen = stockPrevio; renderCards(); renderTable(); }
+    const actual = ocPorFila(rowNumber);
+    if (actual) Object.assign(actual, previo);
+    renderCards(); renderTable();
+    alert('No se pudo actualizar el estado: ' + (e.message || e));
+  } finally {
+    pendingWrites--;
+  }
+}
+
+// El Admin corrige el resultado de cumplimiento (check)
+async function toggleCumplimiento(rowNumber) {
+  const oc = ocPorFila(rowNumber);
+  if (!oc || currentUser.rol !== 'Admin') return;
+  const nuevo = oc.cumplimiento === 'A tiempo' ? 'Retraso' : 'A tiempo';
+  const ok = await askConfirm('¿Marcar la OC N° ' + oc.numero_oc + ' como "' + nuevo + '"?', 'Cambiar cumplimiento');
+  if (ok) await setCumplimiento(rowNumber, nuevo);
+}
+async function setCumplimiento(rowNumber, valor) {
+  const oc = ocPorFila(rowNumber);
+  if (!oc || currentUser.rol !== 'Admin') return;
+  const previo = { ...oc };
+  if (valor === 'Auto') oc.cumplimiento_manual = '';
+  else { oc.cumplimiento = valor; oc.cumplimiento_manual = 'Sí'; }
+  aplicarCierreLocal(oc, null);
+  refrescarTodo(rowNumber);
+  pendingWrites++;
+  try {
+    const r = await apiCall('setCumplimiento', { rowNumber, valor });
+    if (!r.success) throw new Error(r.message || 'Error desconocido');
+    const actual = ocPorFila(rowNumber);
+    if (actual) { aplicarRespuesta(actual, r); refrescarTodo(rowNumber); }
+  } catch (e) {
+    const actual = ocPorFila(rowNumber);
+    if (actual) Object.assign(actual, previo);
+    refrescarTodo(rowNumber);
+    alert('No se pudo cambiar el cumplimiento, se deshizo el cambio: ' + (e.message || e));
   } finally {
     pendingWrites--;
   }
@@ -1348,6 +1667,23 @@ async function eliminarOC(rowNumber) {
 }
 
 /* ---------------- Modal Detalle (Proveedor) ---------------- */
+function renderDetalleCumplimiento(oc, esAdmin) {
+  const el = document.getElementById('detalleCumplimiento');
+  if (oc.estado !== 'Terminado') { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <h3 class="subhead">Cumplimiento</h3>
+    <div class="cumpl-box">
+      <div><div class="k">Fecha pactada (original)</div><div class="v mono">${oc.fecha_entrega}</div></div>
+      <div><div class="k">Fecha de cierre</div><div class="v mono">${oc.fecha_cierre || '—'}</div></div>
+      <div><div class="k">Resultado</div><div class="v">${badgeCumplimiento(oc, false)}</div></div>
+    </div>
+    ${esAdmin ? `<div class="cumpl-actions">
+      <button type="button" class="btn btn-outline" onclick="setCumplimiento(${oc.rowNumber}, 'A tiempo')">✔ Marcar A tiempo</button>
+      <button type="button" class="btn btn-outline" onclick="setCumplimiento(${oc.rowNumber}, 'Retraso')">⚠ Marcar Retraso</button>
+      <button type="button" class="btn btn-outline" onclick="setCumplimiento(${oc.rowNumber}, 'Auto')">↺ Volver a automático</button>
+    </div>` : ''}`;
+}
+
 function openDetalleModal(rowNumber) {
   const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
   if (!oc) return;
@@ -1410,11 +1746,12 @@ function openDetalleModal(rowNumber) {
     }).join('');
   }
 
-  // El Admin solo consulta el historial; el Proveedor es quien modifica fecha y registra entregas.
-  const soloLectura = currentUser.rol === 'Admin';
-  ['subFecha', 'fechaForm', 'subEntrega', 'entregaForm'].forEach(id => {
-    document.getElementById(id).classList.toggle('hidden', soloLectura);
-  });
+  // La fecha solo la modifica el Admin. Ambos pueden registrar entregas (el proveedor solo si la OC no está terminada).
+  const esAdmin = currentUser.rol === 'Admin';
+  ['subFecha', 'fechaForm'].forEach(id => document.getElementById(id).classList.toggle('hidden', !esAdmin));
+  const sinEntregas = (oc.estado === 'Terminado' && !esAdmin);
+  ['subEntrega', 'entregaForm'].forEach(id => document.getElementById(id).classList.toggle('hidden', sinEntregas));
+  renderDetalleCumplimiento(oc, esAdmin);
 
   document.getElementById('detalleModalOverlay').classList.remove('hidden');
 }
@@ -1427,29 +1764,30 @@ async function submitEntregaForm(ev) {
   const rowNumber = document.getElementById('e_rowNumber').value;
   const fecha = document.getElementById('e_fecha').value;
   const cantidad = Number(document.getElementById('e_cantidad').value);
-  const oc = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+  const oc = ocPorFila(rowNumber);
   if (!oc || !fecha || !(cantidad > 0)) return;
+  if (oc.estado === 'Terminado' && currentUser.rol !== 'Admin') return;
 
-  const previo = { stock_almacen: oc.stock_almacen, detalle_entregas: oc.detalle_entregas, estado: oc.estado };
+  const previo = { ...oc };
   const nuevoStock = Number(oc.stock_almacen || 0) + cantidad;
-  const entrada = fecha + ': ' + cantidad + ' ' + oc.unidad;
+  const entrada = fecha + ': ' + cantidad + ' ' + oc.unidad + ' (reg. ' + nowLima() + ' · ' + currentUser.nombre + ')';
   oc.stock_almacen = nuevoStock;
   oc.detalle_entregas = oc.detalle_entregas ? (oc.detalle_entregas + ' | ' + entrada) : entrada;
-  if (nuevoStock >= Number(oc.cantidad_total || 0)) oc.estado = 'Terminado';
+  if (nuevoStock >= Number(oc.cantidad_total || 0) && oc.estado !== 'Terminado') {
+    oc.estado = 'Terminado';
+    oc.fecha_cierre = fecha; oc.cumplimiento_manual = '';
+    aplicarCierreLocal(oc, fecha);
+  }
   closeDetalleModal(); renderCards(); renderTable();
 
   pendingWrites++;
   try {
     const result = await apiCall('registrarEntrega', { rowNumber, fecha, cantidad });
     if (!result.success) throw new Error(result.message || 'Error desconocido');
-    const actual = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
-    if (actual) {
-      actual.stock_almacen = Number(result.nuevoStock);
-      actual.detalle_entregas = String(result.nuevoDetalle || '').replace(/\bMill\b/g, 'Und');
-      renderCards(); renderTable();
-    }
+    const actual = ocPorFila(rowNumber);
+    if (actual) { aplicarRespuesta(actual, result); renderCards(); renderTable(); }
   } catch (e) {
-    const actual = allOcs.find(o => Number(o.rowNumber) === Number(rowNumber));
+    const actual = ocPorFila(rowNumber);
     if (actual) Object.assign(actual, previo);
     renderCards(); renderTable();
     alert('No se pudo registrar la entrega, se deshizo el cambio: ' + (e.message || e));
@@ -1601,6 +1939,305 @@ function resolveConfirm(result) {
   if (confirmResolver) { confirmResolver(result); confirmResolver = null; }
 }
 
+/* ---------------- Pestañas ---------------- */
+function showView(v) {
+  currentView = v;
+  const ids = { ordenes: 'viewOrdenes', cumplimiento: 'viewCumplimiento', proyectado: 'viewProyectado' };
+  Object.keys(ids).forEach(k => document.getElementById(ids[k]).classList.toggle('hidden', k !== v));
+  document.querySelectorAll('#tabsNav .tab').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  if (v === 'cumplimiento') renderCumplimiento();
+  if (v === 'proyectado') { renderProyectado(); loadProy(true); }
+}
+
+function nombreProv(email) {
+  const p = listaProv.find(x => x.email === email);
+  if (p && p.nombre) return p.nombre;
+  if (currentUser && currentUser.email === email) return currentUser.nombre;
+  return email || '';
+}
+function llenarListaProveedores() {
+  document.getElementById('listaProveedores').innerHTML =
+    listaProv.map(p => `<option value="${p.email}">${p.nombre}</option>`).join('');
+}
+function llenarSelect(id, opciones, valorActual) {
+  const sel = document.getElementById(id);
+  sel.innerHTML = opciones.map(o => `<option value="${o.v}">${o.t}</option>`).join('');
+  sel.value = opciones.some(o => o.v === valorActual) ? valorActual : opciones[0].v;
+}
+function mesDe(f) { return String(f || '').slice(0, 7); }
+function excelDesdeFilas(rows, hoja, prefijo) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, hoja);
+  XLSX.writeFile(wb, `${prefijo}_${hoyLimaStr()}.xlsx`);
+}
+
+/* ---------------- Cumplimiento ---------------- */
+let ultimaListaCumpl = [];
+
+function celdaPct(ok, ev) {
+  if (!ev) return '<span style="color:var(--ink-soft)">—</span>';
+  const p = Math.round(ok / ev * 100);
+  const cls = p >= 90 ? '' : (p >= 70 ? 'mid' : 'low');
+  return `<div class="pct-cell"><b>${p}%</b><div class="pct-bar" style="flex:1"><div class="pct-fill ${cls}" style="width:${p}%"></div></div></div>`;
+}
+
+function renderCumplimiento() {
+  const esAdmin = currentUser.rol === 'Admin';
+  const hoy = hoyLimaStr();
+
+  const provSel = document.getElementById('cumplProv');
+  provSel.classList.toggle('hidden', !esAdmin);
+  if (esAdmin) {
+    const provs = [...new Set(allOcs.map(o => o.email_proveedor).filter(Boolean))].sort();
+    llenarSelect('cumplProv', [{ v: '', t: 'Todos los proveedores' }].concat(provs.map(p => ({ v: p, t: nombreProv(p) }))), provSel.value);
+  }
+  const meses = [...new Set(allOcs.filter(o => o.estado === 'Terminado' && o.fecha_cierre).map(o => mesDe(o.fecha_cierre)))].sort().reverse();
+  llenarSelect('cumplMes', [{ v: '', t: 'Todos los meses' }].concat(meses.map(m => ({ v: m, t: m }))), document.getElementById('cumplMes').value);
+
+  const fProv = esAdmin ? provSel.value : '';
+  const fMes = document.getElementById('cumplMes').value;
+  const fRes = document.getElementById('cumplFiltro').value;
+
+  const base = allOcs.filter(o => !fProv || o.email_proveedor === fProv);
+  const cerradas = base.filter(o => o.estado === 'Terminado' && (!fMes || mesDe(o.fecha_cierre) === fMes));
+  const evaluadas = cerradas.filter(o => o.cumplimiento === 'A tiempo' || o.cumplimiento === 'Retraso');
+  const aTiempo = evaluadas.filter(o => o.cumplimiento === 'A tiempo').length;
+  const conRetraso = evaluadas.length - aTiempo;
+  const sumDias = evaluadas.filter(o => o.cumplimiento === 'Retraso').reduce((s, o) => s + (Number(o.dias_retraso) || 0), 0);
+  const pct = evaluadas.length ? Math.round(aTiempo / evaluadas.length * 100) : null;
+  const vencidas = base.filter(o => o.estado !== 'Terminado' && o.fecha_entrega && o.fecha_entrega < hoy);
+
+  document.getElementById('cumplCards').innerHTML = `
+    <div class="card"><div class="icon">📋</div><div class="label">OCs evaluadas</div><div class="value">${evaluadas.length}</div></div>
+    <div class="card c-ok"><div class="icon">✔</div><div class="label">A tiempo</div><div class="value">${aTiempo}</div></div>
+    <div class="card c-alert"><div class="icon">⚠</div><div class="label">Con retraso</div><div class="value">${conRetraso}</div></div>
+    <div class="card c-ok"><div class="icon">🎯</div><div class="label">% de cumplimiento</div><div class="value">${pct === null ? '—' : pct + '%'}</div></div>
+    <div class="card c-kg"><div class="icon">⏱</div><div class="label">Retraso promedio</div><div class="value sm">${conRetraso ? (sumDias / conRetraso).toFixed(1) + ' días' : '—'}</div></div>
+    <div class="card c-warn"><div class="icon">⏳</div><div class="label">Vencidas sin cerrar</div><div class="value">${vencidas.length}</div></div>`;
+
+  // Ranking de proveedores (solo Admin)
+  const rk = document.getElementById('cumplRanking');
+  if (esAdmin) {
+    const mapa = {};
+    allOcs.forEach(o => {
+      const k = o.email_proveedor || '(sin proveedor)';
+      const m = mapa[k] || (mapa[k] = { email: k, ev: 0, ok: 0, late: 0, dias: 0, venc: 0 });
+      if (o.estado === 'Terminado') {
+        if (fMes && mesDe(o.fecha_cierre) !== fMes) return;
+        if (o.cumplimiento === 'A tiempo') { m.ev++; m.ok++; }
+        else if (o.cumplimiento === 'Retraso') { m.ev++; m.late++; m.dias += Number(o.dias_retraso) || 0; }
+      } else if (o.fecha_entrega && o.fecha_entrega < hoy) { m.venc++; }
+    });
+    const filas = Object.values(mapa).sort((a, b) => ((b.ev ? b.ok / b.ev : -1) - (a.ev ? a.ok / a.ev : -1)) || (b.ev - a.ev));
+    rk.innerHTML = filas.length ? `
+      <h3 class="subhead">Ranking de proveedores${fMes ? ' · ' + fMes : ''}</h3>
+      <div class="table-wrap"><table style="min-width:0"><thead><tr>
+        <th>Proveedor</th><th>Evaluadas</th><th>A tiempo</th><th>Con retraso</th><th>% a tiempo</th><th>Retraso prom.</th><th>Vencidas sin cerrar</th>
+      </tr></thead><tbody>${filas.map(m => `<tr>
+        <td title="${m.email}"><b>${nombreProv(m.email)}</b></td>
+        <td class="mono">${m.ev}</td><td class="mono">${m.ok}</td><td class="mono">${m.late}</td>
+        <td style="min-width:170px">${celdaPct(m.ok, m.ev)}</td>
+        <td class="mono">${m.late ? (m.dias / m.late).toFixed(1) + ' d' : '—'}</td>
+        <td class="mono">${m.venc}</td></tr>`).join('')}</tbody></table></div>` : '';
+  } else {
+    rk.innerHTML = '';
+  }
+
+  // Historial: OCs cerradas + vencidas sin cerrar
+  let filas = cerradas.map(o => ({ oc: o, tipo: o.cumplimiento === 'A tiempo' ? 'A tiempo' : (o.cumplimiento === 'Retraso' ? 'Retraso' : 'Sin dato') }));
+  vencidas.forEach(o => filas.push({ oc: o, tipo: 'Vencida' }));
+  if (fRes) filas = filas.filter(f => f.tipo === fRes);
+  filas.sort((a, b) => {
+    if (a.tipo === 'Vencida' && b.tipo !== 'Vencida') return -1;
+    if (b.tipo === 'Vencida' && a.tipo !== 'Vencida') return 1;
+    if (a.tipo === 'Vencida') return diasEntreStr(b.oc.fecha_entrega, hoy) - diasEntreStr(a.oc.fecha_entrega, hoy);
+    return String(b.oc.fecha_cierre || '').localeCompare(String(a.oc.fecha_cierre || ''));
+  });
+  ultimaListaCumpl = filas;
+
+  document.getElementById('cumplTitulo').textContent = esAdmin ? 'Historial de cumplimiento' : 'Mi historial de cumplimiento';
+  const cols = ['N° OC'].concat(esAdmin ? ['Proveedor'] : [], ['Código', 'Descripción', 'Fecha pactada', 'Últ. fecha programada', 'Fecha de cierre', 'Resultado']);
+  document.getElementById('cumplHead').innerHTML = cols.map(t => `<th>${t}</th>`).join('');
+  const body = document.getElementById('cumplBody');
+  const empty = document.getElementById('cumplEmpty');
+  if (!filas.length) { body.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  body.innerHTML = filas.map(({ oc, tipo }) => {
+    const resultado = tipo === 'Vencida'
+      ? `<span class="badge badge-open">⏳ Vencida ${diasEntreStr(oc.fecha_entrega, hoy)} d</span>`
+      : badgeCumplimiento(oc, esAdmin);
+    return `<tr class="${tipo === 'Retraso' || tipo === 'Vencida' ? 'retrasado' : ''}">
+      <td class="oc-num">${oc.numero_oc}</td>
+      ${esAdmin ? `<td title="${oc.email_proveedor}">${nombreProv(oc.email_proveedor)}</td>` : ''}
+      <td>${oc.codigo}</td><td>${oc.descripcion}</td>
+      <td class="mono">${oc.fecha_entrega}</td>
+      <td class="mono">${oc.fecha_entrega_actualizada || '<span style="color:var(--ink-soft)">—</span>'}</td>
+      <td class="mono">${oc.fecha_cierre || '<span style="color:var(--ink-soft)">—</span>'}</td>
+      <td>${resultado}</td></tr>`;
+  }).join('');
+}
+
+function exportCumplimiento() {
+  if (!ultimaListaCumpl.length) { alert('No hay datos para exportar con el filtro actual.'); return; }
+  const hoy = hoyLimaStr();
+  excelDesdeFilas(ultimaListaCumpl.map(({ oc, tipo }) => ({
+    'N° OC': oc.numero_oc,
+    'Proveedor': nombreProv(oc.email_proveedor),
+    'Código': oc.codigo,
+    'Descripción': oc.descripcion,
+    'Fecha pactada (original)': oc.fecha_entrega,
+    'Últ. fecha programada': oc.fecha_entrega_actualizada || '',
+    'Fecha de cierre': oc.fecha_cierre || '',
+    'Resultado': tipo,
+    'Días de retraso': tipo === 'Vencida' ? diasEntreStr(oc.fecha_entrega, hoy) : (oc.dias_retraso === '' ? '' : oc.dias_retraso),
+    'Marcado por Admin': oc.cumplimiento_manual === 'Sí' ? 'Sí' : ''
+  })), 'Cumplimiento', 'Cumplimiento');
+}
+
+/* ---------------- Proyectado (compras proyectadas por proveedor) ---------------- */
+let ultimaListaProy = [];
+
+async function loadProy(silent = false) {
+  try {
+    const r = await apiCall('getProyectado');
+    if (r.success) {
+      allProy = r.proy || [];
+      if (currentView === 'proyectado') renderProyectado();
+    } else if (!silent) {
+      alert('No se pudo cargar el proyectado: ' + (r.message || ''));
+    }
+  } catch (e) {
+    console.error('[loadProy]', e);
+    if (!silent) alert('Error de conexión al cargar el proyectado.');
+  }
+}
+
+function renderProyectado() {
+  const esAdmin = currentUser.rol === 'Admin';
+  const provSel = document.getElementById('proyProv');
+  provSel.classList.toggle('hidden', !esAdmin);
+  if (esAdmin) {
+    const provs = [...new Set(allProy.map(p => p.email_proveedor).filter(Boolean))].sort();
+    llenarSelect('proyProv', [{ v: '', t: 'Todos los proveedores' }].concat(provs.map(p => ({ v: p, t: nombreProv(p) }))), provSel.value);
+  }
+  const meses = [...new Set(allProy.map(p => p.mes).filter(Boolean))].sort();
+  llenarSelect('proyMes', [{ v: '', t: 'Todos los meses' }].concat(meses.map(m => ({ v: m, t: m }))), document.getElementById('proyMes').value);
+
+  const fProv = esAdmin ? provSel.value : '';
+  const fMes = document.getElementById('proyMes').value;
+  const lista = allProy
+    .filter(p => (!fProv || p.email_proveedor === fProv) && (!fMes || p.mes === fMes))
+    .sort((a, b) => a.mes.localeCompare(b.mes) || nombreProv(a.email_proveedor).localeCompare(nombreProv(b.email_proveedor)) || a.descripcion.localeCompare(b.descripcion));
+  ultimaListaProy = lista;
+
+  const totKg = lista.filter(p => p.unidad === 'Kg').reduce((s, p) => s + p.cantidad, 0);
+  const totUnd = lista.filter(p => p.unidad === 'Und').reduce((s, p) => s + p.cantidad, 0);
+  const totVal = lista.reduce((s, p) => s + p.cantidad * p.precio_estimado, 0);
+  document.getElementById('proyCards').innerHTML = `
+    <div class="card"><div class="icon">🗂️</div><div class="label">Líneas proyectadas</div><div class="value">${lista.length}</div></div>
+    <div class="card c-kg"><div class="icon">⚖️</div><div class="label">Total proyectado en Kg</div><div class="value">${totKg.toLocaleString('es-PE')}</div></div>
+    <div class="card c-mill"><div class="icon">🧮</div><div class="label">Total proyectado en Und</div><div class="value">${totUnd.toLocaleString('es-PE')}</div></div>
+    <div class="card c-ok"><div class="icon">💵</div><div class="label">Valor estimado (USD)</div><div class="value sm">$${totVal.toLocaleString('es-PE', { maximumFractionDigits: 0 })}</div></div>`;
+
+  const cols = (esAdmin ? ['Proveedor'] : []).concat(['Mes', 'Código', 'Descripción', 'Cantidad', 'Precio est. (USD)', 'Valor est. (USD)', 'Nota'], esAdmin ? ['Acciones'] : []);
+  document.getElementById('proyHead').innerHTML = cols.map(t => `<th>${t}</th>`).join('');
+  const body = document.getElementById('proyBody');
+  const empty = document.getElementById('proyEmpty');
+  if (!lista.length) { body.innerHTML = ''; empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+  body.innerHTML = lista.map(p => `<tr>
+    ${esAdmin ? `<td title="${p.email_proveedor}"><b>${nombreProv(p.email_proveedor)}</b></td>` : ''}
+    <td class="mono">${p.mes}</td>
+    <td>${p.codigo || '<span style="color:var(--ink-soft)">—</span>'}</td>
+    <td>${p.descripcion}</td>
+    <td class="mono">${Number(p.cantidad).toLocaleString('es-PE')} ${p.unidad}</td>
+    <td class="mono">$${Number(p.precio_estimado).toFixed(2)}</td>
+    <td class="mono">$${(p.cantidad * p.precio_estimado).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</td>
+    <td>${p.nota || '<span style="color:var(--ink-soft)">—</span>'}</td>
+    ${esAdmin ? `<td class="row-actions row-actions-col">
+      <button class="icon-btn" title="Editar" onclick="openProyModal(${p.rowNumber})">✏️</button>
+      <button class="icon-btn" title="Eliminar" onclick="eliminarProy(${p.rowNumber})">🗑️</button></td>` : ''}
+  </tr>`).join('');
+}
+
+function openProyModal(rowNumber) {
+  document.getElementById('proyForm').reset();
+  document.getElementById('p_rowNumber').value = '';
+  if (rowNumber) {
+    const p = allProy.find(x => Number(x.rowNumber) === Number(rowNumber));
+    if (!p) return;
+    document.getElementById('proyModalTitle').textContent = 'Editar compra proyectada';
+    document.getElementById('p_rowNumber').value = p.rowNumber;
+    document.getElementById('p_email').value = p.email_proveedor;
+    document.getElementById('p_mes').value = p.mes;
+    document.getElementById('p_codigo').value = p.codigo;
+    document.getElementById('p_descripcion').value = p.descripcion;
+    document.getElementById('p_cantidad').value = p.cantidad;
+    document.getElementById('p_unidad').value = p.unidad;
+    document.getElementById('p_precio').value = p.precio_estimado;
+    document.getElementById('p_nota').value = p.nota;
+  } else {
+    document.getElementById('proyModalTitle').textContent = 'Nueva compra proyectada';
+    document.getElementById('p_mes').value = hoyLimaStr().slice(0, 7);
+  }
+  document.getElementById('proyModalOverlay').classList.remove('hidden');
+}
+function closeProyModal() {
+  document.getElementById('proyModalOverlay').classList.add('hidden');
+}
+
+async function submitProyForm(ev) {
+  ev.preventDefault();
+  const rowNumber = document.getElementById('p_rowNumber').value;
+  const payload = {
+    email_proveedor: document.getElementById('p_email').value.trim().toLowerCase(),
+    mes: document.getElementById('p_mes').value,
+    codigo: document.getElementById('p_codigo').value.trim(),
+    descripcion: document.getElementById('p_descripcion').value.trim(),
+    cantidad: document.getElementById('p_cantidad').value,
+    unidad: document.getElementById('p_unidad').value,
+    precio_estimado: document.getElementById('p_precio').value || 0,
+    nota: document.getElementById('p_nota').value.trim()
+  };
+  const btn = document.getElementById('proyModalSave');
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+  try {
+    const r = await apiCall(rowNumber ? 'updateProy' : 'createProy', rowNumber ? { ...payload, rowNumber } : payload);
+    if (!r.success) { alert('No se pudo guardar: ' + (r.message || 'Error desconocido')); return; }
+    closeProyModal();
+    await loadProy(true);
+  } catch (e) {
+    alert('Error de conexión al guardar la proyección.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+  }
+}
+
+async function eliminarProy(rowNumber) {
+  const p = allProy.find(x => Number(x.rowNumber) === Number(rowNumber));
+  const ok = await askConfirm('¿Estás seguro de eliminar esta compra proyectada' + (p ? ' (' + p.descripcion + ', ' + p.mes + ')' : '') + '?', '¿Eliminar proyección?');
+  if (!ok) return;
+  try {
+    const r = await apiCall('deleteProy', { rowNumber });
+    if (!r.success) { alert('No se pudo eliminar: ' + (r.message || '')); return; }
+    await loadProy(true);
+  } catch (e) {
+    alert('Error de conexión al eliminar la proyección.');
+  }
+}
+
+function exportProy() {
+  if (!ultimaListaProy.length) { alert('No hay datos para exportar con el filtro actual.'); return; }
+  excelDesdeFilas(ultimaListaProy.map(p => ({
+    'Proveedor': nombreProv(p.email_proveedor), 'Mes': p.mes, 'Código': p.codigo, 'Descripción': p.descripcion,
+    'Cantidad': p.cantidad, 'Unidad': p.unidad, 'Precio estimado (USD)': p.precio_estimado,
+    'Valor estimado (USD)': p.cantidad * p.precio_estimado, 'Nota': p.nota
+  })), 'Proyectado', 'Proyectado');
+}
+
 /* ---------------- Exportar Excel ---------------- */
 function exportExcel() {
   const filtered = getFilteredOcs();
@@ -1619,6 +2256,9 @@ function exportExcel() {
     'Última fecha programada': oc.fecha_entrega_actualizada || '',
     'Historial de fechas': oc.historial_fechas || '',
     'Estado': oc.estado,
+    'Cumplimiento': oc.cumplimiento || '',
+    'Días de retraso': oc.dias_retraso === '' ? '' : oc.dias_retraso,
+    'Fecha de cierre': oc.fecha_cierre || '',
     'Cant. Despachar': oc.stock_almacen,
     'Precio unitario (USD)': oc.precio_unitario,
     'Proveedor': oc.email_proveedor,
